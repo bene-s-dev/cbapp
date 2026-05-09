@@ -1,3 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body { 
+  font-family: 'Poppins', sans-serif; 
+  @apply bg-[#1a0f2b] text-white m-0 overflow-hidden;
+}
+
+.bg-duo-card { 
+  background-color: #271a3c; 
+}
+
+.fade-in { 
+  animation: fadeIn 0.3s ease-out; 
+}
+
+@keyframes fadeIn { 
+  from { opacity: 0; transform: translateY(10px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
