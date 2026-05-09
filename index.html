@@ -2,12 +2,36 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Meine PWA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DuoSync</title>
+    
+    <meta name="theme-color" content="#1a0f2b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2589/2589175.png">
+    
+    <script>
+        const myManifest = {
+            "short_name": "DuoSync",
+            "name": "DuoSync",
+            "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/2589/2589175.png", "type": "image/png", "sizes": "512x512" }],
+            "start_url": ".",
+            "display": "standalone",
+            "theme_color": "#1a0f2b",
+            "background_color": "#1a0f2b"
+        };
+        const stringManifest = JSON.stringify(myManifest);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
   </head>
-  <body class="bg-slate-50">
+  <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
