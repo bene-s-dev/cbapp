@@ -1,16 +1,23 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+  color-scheme: dark;
+}
 
 body { 
   font-family: 'Poppins', sans-serif; 
-  @apply bg-[#1a0f2b] text-white m-0 overflow-hidden;
+  background-color: #1a0f2b !important; 
+  color: white;
+  margin: 0;
+  overflow: hidden;
 }
 
 .bg-duo-card { 
-  background-color: #271a3c; 
+  background-color: #271a3c !important; 
 }
 
 .fade-in { 
