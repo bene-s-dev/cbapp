@@ -122,7 +122,7 @@ function App() {
             <div className="p-8 bg-duo-card rounded-[2.5rem] border border-white/5 space-y-4">
               <h2 className="text-xl font-bold italic">Partner-Code</h2>
               <div className="bg-[#1a0f2b] p-5 rounded-2xl font-mono text-2xl text-[#ec4899] tracking-widest border border-white/5">{user.code}</div>
-              <button onClick={() => { navigator.clipboard.writeText(user.code); alert('Kopiert!'); }} className="text-[10px] uppercase font-bold text-slate-500 tracking-widest flex items-center gap-2 mx-auto mt-2">
+              <button onClick={() => { navigator.clipboard.writeText(user.code); alert('Kopiert!'); }} className="text-[10px] uppercase font-bold text-slate-500 tracking-widest flex items-center justify-center gap-2">
                 <Copy size={14} /> Kopieren
               </button>
             </div>
@@ -176,4 +176,3 @@ function App() {
 }
 
 export default App;
-
