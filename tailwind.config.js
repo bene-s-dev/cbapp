@@ -3,8 +3,7 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./src/App.tsx",      // Explizit die Datei nennen
-    "./App.tsx"           // Falls sie doch im Root liegt
+    "./**/*.{js,ts,jsx,tsx}", // Scannt wirklich ALLES
   ],
   theme: {
     extend: {
