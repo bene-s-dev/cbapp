@@ -1,35 +1,36 @@
-<!DOCTYPE html>
-<html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>DuoSync</title>
-    
-    <meta name="theme-color" content="#1a0f2b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <script>
-        const myManifest = {
-            "short_name": "DuoSync",
-            "name": "DuoSync",
-            "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/2589/2589175.png", "type": "image/png", "sizes": "512x512" }],
-            "start_url": ".",
-            "display": "standalone",
-            "theme_color": "#1a0f2b",
-            "background_color": "#1a0f2b"
-        };
-        const stringManifest = JSON.stringify(myManifest);
-        const blob = new Blob([stringManifest], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestURL;
-        document.head.appendChild(link);
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
+:root {
+  --bg-deep: #0f0a1a;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  background-color: var(--bg-deep);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  /* Verhindert das "Ziehen" der Seite nach unten */
+  overscroll-behavior: none;
+}
+
+.bg-aura {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* Wir ziehen die Aura etwas höher */
+  background: radial-gradient(circle at 50% -10%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 80% 90%, rgba(192, 132, 252, 0.1) 0%, transparent 40%);
+}
+
+/* Hilfsklasse für den Abstand oben, der die Notch/Uhrzeit berücksichtigt */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
