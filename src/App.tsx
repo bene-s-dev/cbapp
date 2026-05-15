@@ -38,7 +38,7 @@ export default function App() {
     if (view === 'main') {
       // Innerhalb der Haupt-Ansicht steuern wir über Tabs
       switch (activeTab) {
-        case 'dashboard': return <Dashboard />;
+        case 'dashboard': return <Dashboard onStartQuestions={() => setActiveTab('questions')} />;
         case 'questions': return <Questions />;
         case 'profile': return <Profile onLogout={() => setView('login')} />;
       }
