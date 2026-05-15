@@ -73,7 +73,8 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
           <div className="space-y-4">
             <h2 className="text-3xl font-black text-[#1E1B4B]">Datenschutz</h2>
             <p className="text-purple-400 leading-relaxed">
-              Deine Privatsphäre ist uns wichtig. Alle Daten werden Ende-zu-Ende verschlüsselt und nur für euch beide synchronisiert.
+              Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.
+
             </p>
           </div>
           {/* Checkbox für die Akzeptanz */}
@@ -84,7 +85,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
               checked={privacyAccepted}
               onChange={(e) => setPrivacyAccepted(e.target.checked)}
             />
-            <span className="text-sm font-medium text-[#1E1B4B]">Ich akzeptiere die Bestimmungen</span>
+            <span className="text-sm font-medium text-[#1E1B4B]">Ich weiß, dass du dir Mühe gibst, meine Daten zu schützen.</span>
           </label>
         </div>
       )}
