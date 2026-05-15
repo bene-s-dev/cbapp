@@ -90,7 +90,7 @@ html, body {
   .tot-box { @apply bg-[var(--light-bg)] border-2 border-[#edf2f7] rounded-[28px] py-[35px] px-2.5 text-center font-semibold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300; }
   .tot-box.selected { @apply bg-[var(--primary)] text-white border-[var(--primary)] -translate-y-[5px]; }
 
-  .textarea-custom { @apply w-full h-40 rounded-[28px] border-2 border-[#eee] p-5 font-inherit text-[1.1rem] outline-none bg-[var(--light-bg)] resize-none; }
+  .textarea-custom { @apply w-full h-40 rounded-[28px] border-2 border-[#eee] p-5 text-[1.1rem] outline-none bg-[var(--light-bg)] resize-none; font-family: inherit; }
 
   .res-bubble { @apply p-[15px] rounded-[22px] text-[0.9rem] border border-[#eee] min-h-[80px] flex flex-col mb-2.5 break-words; }
   .res-bubble b { @apply text-[0.65rem] text-[var(--muted)] uppercase mb-[5px]; }
