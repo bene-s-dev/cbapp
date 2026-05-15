@@ -129,7 +129,6 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         </div>
       </header>
 
-<<<<<<< HEAD
       <div className="flex-1 flex flex-col justify-center">
         {/* SCHRITT 1: DATENSCHUTZ */}
         {step === 1 && (
@@ -140,56 +139,10 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             <div className="space-y-4">
               <h2 className="text-3xl font-black text-[#1E1B4B]">Datenschutz</h2>
               <p className="text-purple-400 leading-relaxed">
-                Deine Privatsphäre ist uns wichtig. Alle Daten werden Ende-zu-Ende verschlüsselt und nur für euch beide synchronisiert.
-=======
-      {/* SCHRITT 1: DATENSCHUTZ */}
-      {step === 1 && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div className="p-6 rounded-[2.5rem] bg-purple-50 inline-block">
-            <ShieldCheck className="w-12 h-12 text-[#A855F7]" />
-          </div>
-          <div className="space-y-4">
-            <h2 className="text-3xl font-black text-[#1E1B4B]">Datenschutz</h2>
-            <p className="text-purple-400 leading-relaxed">
-              Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.
-
-            </p>
-          </div>
-          {/* Checkbox für die Akzeptanz */}
-          <label className="flex items-center gap-4 p-6 glass-card border-purple-100">
-            <input 
-              type="checkbox" 
-              className="w-6 h-6 rounded-lg accent-[#A855F7]"
-              checked={privacyAccepted}
-              onChange={(e) => setPrivacyAccepted(e.target.checked)}
-            />
-            <span className="text-sm font-medium text-[#1E1B4B]">Ich weiß, dass du dir Mühe gibst, meine Daten zu schützen.</span>
-          </label>
-        </div>
-      )}
-
-      {/* SCHRITT 2: PWA INSTALLATION */}
-      {step === 2 && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div className="p-6 rounded-[2.5rem] bg-purple-50 inline-block">
-            <Download className="w-12 h-12 text-[#A855F7]" />
-          </div>
-          <div className="space-y-4">
-            <h2 className="text-3xl font-black text-[#1E1B4B]">App installieren</h2>
-            <p className="text-purple-400">Für das beste Erlebnis, installiere DuoSync auf deinem Home-Bildschirm.</p>
-          </div>
-
-          {isIOS ? (
-            // iOS Anleitung (da iOS kein automatisches Prompt unterstützt)
-            <div className="p-6 glass-card border-purple-100 space-y-4 bg-white/40">
-              <p className="text-sm font-bold text-[#1E1B4B] flex items-center gap-2">
-                <Share className="w-4 h-4 text-[#A855F7]" /> 1. Drücke auf 'Teilen'
-              </p>
-              <p className="text-sm font-bold text-[#1E1B4B] flex items-center gap-2">
-                <PlusSquare className="w-4 h-4 text-[#A855F7]" /> 2. 'Zum Home-Bildschirm'
->>>>>>> 54c9c9fdfed654d6b9cf007b73388e20afb68fe4
+                Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.
               </p>
             </div>
+            {/* Checkbox für die Akzeptanz */}
             <label className="flex items-center gap-4 p-6 glass-card border-purple-100">
               <input 
                 type="checkbox" 
@@ -197,7 +150,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
                 checked={privacyAccepted}
                 onChange={(e) => setPrivacyAccepted(e.target.checked)}
               />
-              <span className="text-sm font-medium text-[#1E1B4B]">Ich akzeptiere die Bestimmungen</span>
+              <span className="text-sm font-medium text-[#1E1B4B]">Ich weiß, dass du dir Mühe gibst, meine Daten zu schützen.</span>
             </label>
           </div>
         )}
