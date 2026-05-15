@@ -1,127 +1,120 @@
-/* Importiere die Plus Jakarta Sans Schriftart für ein modernes Gefühl */
+/* Importiere die Plus Jakarta Sans und Outfit Schriftarten */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Definiere die Hauptfarben: Helles Fliederweiß für den Hintergrund und weiches Lila für Akzente */
+  /* Bestehende Farben */
   --bg-light: #F5F3FF;
   --accent-purple: #A855F7;
   --text-main: #1E1B4B;
+
+  /* Neue Farben aus der CB-App */
+  --primary: #ff7675; 
+  --secondary: #a29bfe; 
+  --bg: #0f0c29; 
+  --card: #ffffff; 
+  --text: #2d3436; 
+  --muted: #636e72; 
+  --accent-green: #00b894; 
+  --light-bg: #f8fafc;
 }
 
 html, body {
-  margin: 0; /* Entferne Standard-Ränder */
-  padding: 0; /* Entferne Standard-Abstände */
-  width: 100%; /* Volle Breite */
-  height: 100%; /* Volle Höhe */
-  overflow: hidden; /* Verhindere Scrollen auf der Hauptebene für PWA-Feeling */
-  position: fixed; /* Fixiere die Position für flüssige App-Erfahrung */
-  background-color: var(--bg-light); /* Setze den hellen Hintergrund */
-  font-family: 'Plus Jakarta Sans', sans-serif; /* Nutze die moderne Schriftart */
-  color: var(--text-main); /* Setze die Haupttextfarbe */
-  overscroll-behavior: none; /* Verhindere das "Ziehen" auf iOS */
+  margin: 0; 
+  padding: 0; 
+  width: 100%; 
+  height: 100%; 
+  overflow: hidden; 
+  position: fixed; 
+  background-color: var(--bg); 
+  font-family: 'Outfit', sans-serif;
+  color: var(--text-main); 
+  overscroll-behavior: none; 
 }
 
 /* Die animierte Aura im Hintergrund */
 .bg-aura {
-  position: absolute; /* Absolut positioniert hinter dem Inhalt */
-  inset: 0; /* Erstreckt sich über den ganzen Bildschirm */
-  z-index: -1; /* Hinter allen anderen Elementen */
-  overflow: hidden; /* Verstecke ausbrechende Kreise */
-  background: var(--bg-light); /* Basis-Hintergrundfarbe */
+  position: absolute; 
+  inset: 0; 
+  z-index: -1; 
+  overflow: hidden; 
+  background: var(--bg); 
 }
 
-/* Erster Kreis der Aura */
-.bg-aura::before {
-  content: ''; /* Notwendig für Pseudo-Elemente */
-  position: absolute; /* Frei positionierbar */
-  width: 150vw; /* Sehr breit für weiche Kanten */
-  height: 150vw; /* Sehr hoch */
-  top: -75vw; /* Nach oben verschoben */
-  left: -50vw; /* Nach links verschoben */
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); /* Lila Gradient */
-  animation: float 20s infinite alternate ease-in-out; /* Sanfte Schwebe-Animation */
-}
-
-/* Zweiter Kreis der Aura */
-.bg-aura::after {
-  content: ''; /* Notwendig für Pseudo-Elemente */
-  position: absolute; /* Frei positionierbar */
-  width: 120vw; /* Breite des zweiten Kreises */
-  height: 120vw; /* Höhe des zweiten Kreises */
-  bottom: -60vw; /* Nach unten verschoben */
-  right: -30vw; /* Nach rechts verschoben */
-  background: radial-gradient(circle, rgba(192, 132, 252, 0.1) 0%, transparent 70%); /* Etwas hellerer Gradient */
-  animation: float 25s infinite alternate-reverse ease-in-out; /* Gegensätzliche Animation */
-}
-
-/* Definition der Schwebe-Animation */
-@keyframes float {
-  from { transform: translate(0, 0) rotate(0deg); } /* Startposition */
-  to { transform: translate(10%, 10%) rotate(10deg); } /* Endposition für sanfte Bewegung */
-}
-
-/* Unterstützung für die Statusleiste bei PWAs */
-.safe-top {
-  padding-top: env(safe-area-inset-top); /* Berücksichtigt Notch/Statusleiste oben */
-}
-
-/* Unterstützung für die Home-Leiste unten */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom); /* Berücksichtigt Home-Indikator unten */
+/* Animationen aus der CB-App */
+@keyframes ripple {
+    0% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 118, 117, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0); }
 }
 
 @layer components {
-  /* Glaskarten-Design für einen modernen Look */
+  /* Buttons aus der CB-App */
+  .btn-action { 
+    @apply w-full p-5 rounded-[22px] border-none text-white font-semibold text-lg cursor-pointer transition-all duration-300;
+    background: linear-gradient(135deg, var(--primary), var(--secondary)); 
+    box-shadow: 0 10px 25px rgba(255, 118, 117, 0.35);
+  }
+  
+  .btn-action:disabled { @apply bg-[#dfe6e9] text-[#b2bec3] shadow-none cursor-not-allowed; }
+  .btn-action:active:not(:disabled) { @apply scale-95; }
+
+  /* Status-Boxen und Pills */
+  .status-box { @apply bg-[var(--light-bg)] rounded-[28px] p-6 border border-[#edf2f7] mt-4; }
+  .status-pill { @apply inline-flex items-center gap-2.5 px-[18px] py-2.5 rounded-[50px] font-semibold text-[0.85rem]; }
+  .pill-green { @apply bg-[#e3faf3] text-[var(--accent-green)]; }
+  .pill-red { @apply bg-[#fff1f1] text-[var(--primary)] animate-[ripple_2s_infinite]; }
+
+  /* Quiz-Elemente */
+  .info-hint {
+    @apply bg-[#f1f2ff] text-[var(--secondary)] px-[18px] py-3 rounded-[18px] text-[0.85rem] mb-5 flex items-center gap-2.5 font-medium border border-[rgba(162,155,254,0.3)];
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .prog-dots { @apply flex justify-center gap-2.5 mb-6; }
+  .dot { @apply w-10 h-[7px] rounded-[10px] bg-[#eee] transition-all duration-500; }
+  .dot.active { @apply bg-[var(--secondary)] w-[70px]; }
+  .dot.done { @apply bg-[var(--accent-green)]; }
+
+  .rank-card { 
+    @apply bg-white border-2 border-[#edf2f7] p-[18px] mb-3 rounded-[22px] flex items-center gap-[15px] cursor-grab touch-none shadow-[0_2px_5px_rgba(0,0,0,0.05)] transition-all duration-200 select-none;
+  }
+  .rank-tag { @apply bg-[var(--secondary)] text-white w-[30px] h-[30px] rounded-full flex items-center justify-center text-[0.85rem] font-semibold flex-shrink-0; }
+  .sortable-ghost { @apply opacity-40 bg-[var(--light-bg)] border-2 border-dashed border-[var(--secondary)]; }
+  
+  .tot-grid { @apply grid grid-cols-2 gap-[15px] w-full; }
+  .tot-box { @apply bg-[var(--light-bg)] border-2 border-[#edf2f7] rounded-[28px] py-[35px] px-2.5 text-center font-semibold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300; }
+  .tot-box.selected { @apply bg-[var(--primary)] text-white border-[var(--primary)] -translate-y-[5px]; }
+
+  .textarea-custom { @apply w-full h-40 rounded-[28px] border-2 border-[#eee] p-5 font-inherit text-[1.1rem] outline-none bg-[var(--light-bg)] resize-none; }
+
+  .res-bubble { @apply p-[15px] rounded-[22px] text-[0.9rem] border border-[#eee] min-h-[80px] flex flex-col mb-2.5 break-words; }
+  .res-bubble b { @apply text-[0.65rem] text-[var(--muted)] uppercase mb-[5px]; }
+
+  /* Glaskarten-Design */
   .glass-card {
     @apply bg-white/60 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-xl shadow-purple-500/5;
   }
 
-  /* Abgerundete Buttons (Pill-Design) */
-  .btn-pill {
-    @apply h-14 rounded-full flex items-center justify-center font-bold transition-all active:scale-95 disabled:opacity-50;
-  }
-
-  /* Primär-Button in Lila */
-  .btn-primary {
-    @apply bg-[#A855F7] text-white shadow-lg shadow-purple-500/30 hover:bg-purple-600;
-  }
-
-  /* Sekundär-Button (Transparent/Dezent) */
-  .btn-secondary {
-    @apply bg-purple-100 text-[#A855F7] hover:bg-purple-200;
-  }
-
-  /* Eingabefelder */
-  .input-field {
-    @apply w-full h-14 px-6 bg-white border border-purple-100 rounded-2xl outline-none focus:border-[#A855F7] transition-all text-[#1E1B4B] placeholder:text-purple-300;
-  }
-
-  /* Das schwebende Dock am unteren Rand */
   .nav-dock {
     @apply fixed bottom-8 left-6 right-6 h-20 glass-card flex items-center justify-around px-2 z-50;
   }
 
-  /* Einzelne Icons im Dock */
   .nav-item {
     @apply p-4 rounded-2xl transition-all duration-300 flex flex-col items-center gap-1 text-purple-300;
   }
 
-  /* Aktives Icon im Dock */
   .nav-item-active {
-    @apply text-[#A855F7] bg-purple-50 scale-110;
+    @apply text-[var(--secondary)] bg-purple-50 scale-110;
   }
 }
 
-/* Sanfte Übergänge für die Ansichten */
-.view-enter {
-  animation: fadeIn 0.5s ease-out forwards; /* Einblenden beim Erscheinen */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); } 
+  to { opacity: 1; transform: translateY(0); } 
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); } /* Start: Unsichtbar & leicht unten */
-  to { opacity: 1; transform: translateY(0); } /* Ende: Sichtbar & normale Position */
-}

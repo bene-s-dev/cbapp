@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Home, MessageCircle, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, MessageCircle, User as UserIcon } from 'lucide-react';
+import { supabase } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
 
 // Importiere die modularen Komponenten
 import Login from './components/Login';
@@ -8,85 +10,136 @@ import Dashboard from './components/Dashboard';
 import Questions from './components/Questions';
 import Profile from './components/Profile';
 
-// Definiere die möglichen Haupt-Ansichten der App
-type View = 'login' | 'onboarding' | 'main';
-// Definiere die Tabs innerhalb der Haupt-Ansicht
-type Tab = 'dashboard' | 'questions' | 'profile';
-
-/**
- * App-Komponente: Der zentrale Controller der Anwendung.
- * Steuert das Routing zwischen Login, Onboarding und den Haupt-Tabs.
- */
 export default function App() {
-  // State für die aktuelle Haupt-Ansicht
-  const [view, setView] = useState<View>('login');
-  // State für den aktuell aktiven Tab in der Haupt-Ansicht
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{ display_name: string, partner_name: string } | null>(null);
+  const [view, setView] = useState<'onboarding' | 'main'>('main');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'questions' | 'profile'>('dashboard');
 
-  /**
-   * Hilfsfunktion zum Rendern des Inhalts basierend auf der aktuellen Ansicht/Tab.
-   */
-  const renderContent = () => {
-    if (view === 'login') {
-      return <Login onLogin={() => setView('onboarding')} />;
+  useEffect(() => {
+    // Session beim Laden abrufen
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+      else setLoading(false);
+    });
+
+    // Auf Auth-Änderungen hören
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+      else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('display_name, partner_name, partner_id, partner_code')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      setProfile(data);
     }
-    
-    if (view === 'onboarding') {
-      return <Onboarding onComplete={() => setView('main')} />;
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg)] text-white">
+        <p className="animate-pulse">Lädt...</p>
+      </div>
+    );
+  }
+
+  if (!session || !profile) {
+    return (
+      <div className="h-screen w-screen overflow-hidden relative bg-[var(--bg)]">
+        <main className="h-full flex flex-col safe-top px-8 max-w-md mx-auto relative z-10 bg-white">
+          <Login onLogin={() => {}} />
+        </main>
+      </div>
+    );
+  }
+
+  const renderContent = () => {
+    // Falls noch kein Partner verknüpft ist, zeigen wir das Onboarding (Step 4)
+    if (!profile.partner_id && view !== 'main') {
+      return <Onboarding onComplete={() => {
+        fetchProfile(session.user.id);
+        setView('main');
+      }} />;
     }
 
     if (view === 'main') {
-      // Innerhalb der Haupt-Ansicht steuern wir über Tabs
       switch (activeTab) {
-        case 'dashboard': return <Dashboard onStartQuestions={() => setActiveTab('questions')} />;
-        case 'questions': return <Questions />;
-        case 'profile': return <Profile onLogout={() => setView('login')} />;
+        case 'dashboard': 
+          return <Dashboard 
+            userName={profile.display_name} 
+            partnerName={profile.partner_name} 
+            onStartQuestions={() => setActiveTab('questions')} 
+          />;
+        case 'questions': 
+          return <Questions 
+            userName={profile.display_name} 
+            onComplete={() => setActiveTab('dashboard')} 
+          />;
+        case 'profile': 
+          return <Profile onLogout={async () => {
+            await supabase.auth.signOut();
+          }} />;
       }
     }
+
+    // Fallback: Falls Partner fehlt aber wir im Main-View sind (z.B. nach Abbruch)
+    if (!profile.partner_id) {
+       return <Onboarding onComplete={() => {
+        fetchProfile(session.user.id);
+        setView('main');
+      }} />;
+    }
+
+    return null;
   };
 
   return (
-    // Haupt-Container mit fixierter Größe für PWA-Feeling und dem Aura-Hintergrund
-    <div className="h-screen w-screen overflow-hidden relative text-[#1E1B4B] select-none bg-[#F5F3FF]">
-      {/* Die animierte Aura (definiert in index.css) */}
+    <div className="h-screen w-screen overflow-hidden relative text-[#1E1B4B] select-none bg-[var(--bg)]">
       <div className="bg-aura" />
       
-      {/* Haupt-Inhaltsbereich mit Berücksichtigung der Notch (safe-top) */}
-      <main className="h-full flex flex-col safe-top px-8 max-w-md mx-auto relative z-10">
+      <div className="fixed top-0 left-0 right-0 h-[65px] px-[25px] flex justify-between items-center z-20 bg-white border-b-2 border-[#f1f2f6] max-w-md mx-auto">
+        <div className="text-[1.4rem] font-semibold bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent">
+          CB-App
+        </div>
+      </div>
+
+      <main className="h-full flex flex-col pt-[65px] pb-[100px] safe-top px-6 max-w-md mx-auto relative z-10 bg-white overflow-y-auto">
         {renderContent()}
       </main>
 
-      {/* Die Navigationsleiste (Dock) - Nur sichtbar, wenn der Nutzer eingeloggt ist */}
-      {view === 'main' && (
-        <nav className="nav-dock animate-in fade-in slide-in-from-bottom-10 duration-700">
-          {/* Dashboard Tab */}
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`nav-item ${activeTab === 'dashboard' ? 'nav-item-active' : ''}`}
-          >
-            <Home className={`w-6 h-6 ${activeTab === 'dashboard' ? 'fill-current' : ''}`} />
-            <span className="text-[10px] font-bold">Home</span>
-          </button>
+      <nav className="nav-dock animate-in fade-in slide-in-from-bottom-10 duration-700 max-w-[calc(450px-48px)] mx-auto">
+        <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'nav-item-active' : ''}`}>
+          <Home className={`w-6 h-6 ${activeTab === 'dashboard' ? 'fill-current' : ''}`} />
+          <span className="text-[10px] font-bold">Home</span>
+        </button>
 
-          {/* Fragen Tab */}
-          <button 
-            onClick={() => setActiveTab('questions')}
-            className={`nav-item ${activeTab === 'questions' ? 'nav-item-active' : ''}`}
-          >
-            <MessageCircle className={`w-6 h-6 ${activeTab === 'questions' ? 'fill-current' : ''}`} />
-            <span className="text-[10px] font-bold">Fragen</span>
-          </button>
+        <button onClick={() => setActiveTab('questions')} className={`nav-item ${activeTab === 'questions' ? 'nav-item-active' : ''}`}>
+          <MessageCircle className={`w-6 h-6 ${activeTab === 'questions' ? 'fill-current' : ''}`} />
+          <span className="text-[10px] font-bold">Fragen</span>
+        </button>
 
-          {/* Profil Tab */}
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`nav-item ${activeTab === 'profile' ? 'nav-item-active' : ''}`}
-          >
-            <User className={`w-6 h-6 ${activeTab === 'profile' ? 'fill-current' : ''}`} />
-            <span className="text-[10px] font-bold">Profil</span>
-          </button>
-        </nav>
-      )}
+        <button onClick={() => setActiveTab('profile')} className={`nav-item ${activeTab === 'profile' ? 'nav-item-active' : ''}`}>
+          <UserIcon className={`w-6 h-6 ${activeTab === 'profile' ? 'fill-current' : ''}`} />
+          <span className="text-[10px] font-bold">Profil</span>
+        </button>
+      </nav>
     </div>
   );
 }
