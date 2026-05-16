@@ -209,12 +209,12 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
           </button>
         ) : (
           <button onClick={handleLinkPartner} disabled={loading || !partnerCodeInput} className="btn-action flex items-center justify-center gap-2">
-            {loading ? 'Verknüpfe...' : 'Verknüpfen & Starten ❤️'}
+            {loading ? 'Verknüpfbe...' : 'Verknüpfen & Starten ❤️'}
           </button>
         )}
         
         {step === 2 && (
-          <button onClick={onComplete} className="w-full text-[var(--muted)] text-sm font-medium hover:underline">
+          <button onClick={onComplete} className="w-full text-[var(--muted)] text-sm font-medium hover:underline underline-offset-4 decoration-1">
             Später verknüpfen
           </button>
         )}

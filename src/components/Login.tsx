@@ -10,7 +10,7 @@ type AuthMode = 'login' | 'register' | 'forgot';
 
 export default function Login({ onLogin }: LoginProps) {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [regStep, setRegStep] = useState(1); // 1: Info (Email, PW, Name), 2: Privacy
+  const [regStep, setRegStep] = useState(1); 
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,37 +23,46 @@ export default function Login({ onLogin }: LoginProps) {
   const [isKuss, setIsKuss] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsKuss(prev => !prev);
-    }, 3000);
-    return () => clearInterval(interval);
+    // Animation triggers only once after 2.5 seconds
+    const timer = setTimeout(() => {
+      setIsKuss(true);
+    }, 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRegisterFinal = async () => {
     setLoading(true);
     setMessage(null);
+    console.log("🚀 Starte Registrierung für:", email);
     
     try {
-      // Sign up with display name in metadata
       const { data, error: signUpError } = await supabase.auth.signUp({ 
-        email, 
+        email: email.trim(), 
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            display_name: displayName,
+            display_name: displayName.trim(),
           }
         }
       });
       
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error("❌ Supabase SignUp Error:", signUpError);
+        if (signUpError.message.includes('rate limit')) {
+          throw new Error("Zu viele Versuche. Bitte warte eine Stunde (Supabase Limit).");
+        }
+        throw signUpError;
+      }
       
+      console.log("✅ SignUp erfolgreich, Antwort:", data);
+
       if (data.session) {
         onLogin(true);
       } else {
         setMessage({ 
           type: 'success', 
-          text: 'Registrierung fast fertig! ✨ Bitte klicke auf den Bestätigungslink in deiner E-Mail.' 
+          text: 'Registrierung-Link wurde versendet! ✨ Bitte schau in dein Postfach (und Spam).' 
         });
       }
     } catch (err: any) {
@@ -67,7 +76,7 @@ export default function Login({ onLogin }: LoginProps) {
     e.preventDefault();
     if (mode === 'login') {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
         setMessage({ type: 'error', text: error.message });
         setLoading(false);
@@ -76,7 +85,7 @@ export default function Login({ onLogin }: LoginProps) {
       }
     } else if (mode === 'forgot') {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) {
@@ -88,58 +97,51 @@ export default function Login({ onLogin }: LoginProps) {
     }
   };
 
+  const renderMorphingWord = (word: string, active: boolean) => {
+    return (
+      <span 
+        className={`transition-all duration-1000 ease-in-out flex items-center justify-center ${
+          active 
+            ? 'opacity-100 relative' 
+            : 'opacity-0 absolute inset-0 scale-95 blur-[1px]'
+        } text-[var(--primary)] whitespace-nowrap`}
+      >
+        {word.split('').map((char, i) => (
+          <span 
+            key={i}
+            style={{ 
+              transitionDelay: active ? `${i * 35}ms` : '0ms',
+            }}
+            className="inline-block transition-all duration-700"
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full px-6 animate-in fade-in duration-700">
       
-      <div className="text-center mb-12">
-        <h1 className="text-7xl font-bold text-[var(--text-main)] mb-2" style={{ fontFamily: 'Fraunces, serif' }}>
-          Bisou
-        </h1>
-        <div className="text-[var(--text)] text-lg font-bold flex items-center justify-center h-8 relative" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          <span className={`transition-all duration-1000 ease-in-out ${isKuss ? '-translate-x-12 opacity-40' : 'translate-x-0 opacity-100'}`}>
-            Jeden Tag ein&nbsp;
-          </span>
-          <div className="relative inline-flex items-center justify-center min-w-[110px] h-full">
-            <div className="absolute inset-0 flex items-center justify-center">
-              {"Bisschen".split('').map((char, i) => (
-                <span 
-                  key={i}
-                  style={{ 
-                    transitionDelay: isKuss ? `${i * 40}ms` : `${(8-i) * 30}ms`,
-                  }}
-                  className={`inline-block transition-all duration-1000 ease-in-out ${
-                    isKuss 
-                      ? 'opacity-0 translate-y-8 translate-x-4 rotate-12 blur-sm' 
-                      : 'opacity-100 translate-y-0 translate-x-0 rotate-0 blur-0'
-                  } text-[var(--primary)]`}
-                >
-                  {char}
-                </span>
-              ))}
+      {/* Name und Slogan nur im Login-Modus anzeigen */}
+      {mode === 'login' && (
+        <div className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <h1 className="text-7xl font-bold text-[var(--text-main)] mb-4" style={{ fontFamily: 'Fraunces, serif' }}>
+            Bisou
+          </h1>
+          <div className="text-[var(--text)] text-xl font-medium flex items-center justify-center relative h-8" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <span className="flex-shrink-0 transition-all duration-1000">Jeden Tag ein&nbsp;</span>
+            
+            <div className="relative inline-flex items-center justify-center transition-all duration-1000 ease-in-out">
+               {renderMorphingWord("Bisschen", !isKuss)}
+               {renderMorphingWord("Küsschen", isKuss)}
             </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              {"Küsschen".split('').map((char, i) => (
-                <span 
-                  key={i}
-                  style={{ 
-                    transitionDelay: isKuss ? `${i * 40}ms` : `${(8-i) * 30}ms`,
-                  }}
-                  className={`inline-block transition-all duration-1000 ease-in-out ${
-                    isKuss 
-                      ? 'opacity-100 translate-y-0 translate-x-0 rotate-0 blur-0' 
-                      : 'opacity-0 -translate-y-8 -translate-x-4 -rotate-12 blur-sm'
-                  } text-[var(--primary)]`}
-                >
-                  {char}
-                </span>
-              ))}
-            </div>
+            
+            <span className="flex-shrink-0 transition-all duration-1000">&nbsp;näher.</span>
           </div>
-          <span className={`transition-all duration-1000 ease-in-out ${isKuss ? 'translate-x-12 opacity-40' : 'translate-x-0 opacity-100'}`}>
-            &nbsp;näher.
-          </span>
         </div>
-      </div>
+      )}
       
       <div className="w-full max-w-sm">
         {message && message.type === 'error' && (
@@ -175,7 +177,7 @@ export default function Login({ onLogin }: LoginProps) {
               Neu hier? Registrieren
             </button>
             <div className="text-center pt-2">
-              <button type="button" onClick={() => setMode('forgot')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4">
+              <button type="button" onClick={() => setMode('forgot')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4 decoration-1">
                 Passwort vergessen?
               </button>
             </div>
@@ -189,12 +191,13 @@ export default function Login({ onLogin }: LoginProps) {
                 <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p className="font-bold mb-2">Email versendet!</p>
                 <p className="text-sm opacity-80">{message.text}</p>
-                <button type="button" onClick={() => { setMode('login'); setMessage(null); }} className="mt-6 text-sm font-bold underline">Zum Login</button>
+                <button type="button" onClick={() => { setMode('login'); setMessage(null); }} className="mt-6 text-sm font-bold underline underline-offset-4 decoration-1">Zum Login</button>
               </div>
             )}
             
             {(!message || message.type === 'error') && (
               <>
+                <h2 className="text-2xl font-bold text-center mb-6 text-[var(--text-main)]">Passwort vergessen</h2>
                 <input
                   type="email"
                   className="input-base"
@@ -207,7 +210,7 @@ export default function Login({ onLogin }: LoginProps) {
                   {loading ? 'Lädt...' : 'Link senden ✨'}
                 </button>
                 <div className="text-center pt-2">
-                  <button type="button" onClick={() => setMode('login')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4">
+                  <button type="button" onClick={() => setMode('login')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4 decoration-1">
                     Zurück zum Login
                   </button>
                 </div>
@@ -250,7 +253,7 @@ export default function Login({ onLogin }: LoginProps) {
                 >
                   Weiter <ArrowRight className="w-5 h-5" />
                 </button>
-                <button type="button" onClick={() => setMode('login')} className="w-full text-[var(--muted)] text-sm font-medium py-2">
+                <button type="button" onClick={() => setMode('login')} className="w-full text-[var(--muted)] text-sm font-medium py-2 underline underline-offset-4 decoration-1">
                   Bereits ein Konto? Login
                 </button>
               </div>
@@ -272,7 +275,7 @@ export default function Login({ onLogin }: LoginProps) {
                     </p>
                     <button 
                       onClick={() => { setMode('login'); setMessage(null); }}
-                      className="mt-8 text-sm font-bold text-green-700 underline underline-offset-4"
+                      className="mt-8 text-sm font-bold text-green-700 underline underline-offset-4 decoration-1"
                     >
                       Zurück zum Login
                     </button>
@@ -293,7 +296,7 @@ export default function Login({ onLogin }: LoginProps) {
                         checked={privacyAccepted}
                         onChange={(e) => setPrivacyAccepted(e.target.checked)}
                       />
-                      <span className="text-sm font-medium text-[var(--text)]">Ich akzeptiere die Bedingungen. ❤️</span>
+                      <span className="text-sm font-medium text-[var(--text)]">Ich akzeptiere die Bedingungen.</span>
                     </label>
                     <button 
                       disabled={!privacyAccepted || loading}
