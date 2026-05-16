@@ -25,18 +25,24 @@ export default function App() {
       if (session) fetchProfile(session.user.id, true);
       else setLoading(false);
     });
+// Auf Auth-Änderungen hören
+const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+  console.log("🔔 Auth Event:", event);
+  console.log("👤 Session:", session);
 
-    // Auf Auth-Änderungen hören
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id, true);
-      else {
-        setProfile(null);
-        setDynamicPartnerName(null);
-        setLoading(false);
-        setView('main');
-      }
-    });
+  setSession(session);
+  if (session) {
+    console.log("✅ Session gefunden, lade Profil für:", session.user.id);
+    fetchProfile(session.user.id, true);
+  } else {
+    console.log("ℹ️ Keine Session vorhanden");
+    setProfile(null);
+    setDynamicPartnerName(null);
+    setLoading(false);
+    setView('main');
+  }
+});
+
 
     return () => subscription.unsubscribe();
   }, []);
