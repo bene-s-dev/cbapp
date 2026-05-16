@@ -35,21 +35,22 @@ export default function Login({ onLogin }: LoginProps) {
         if (error) throw error;
         onLogin(false);
       } else if (mode === 'register') {
-        const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+        // Sign up with user metadata so the database trigger can catch it
+        const { data, error: signUpError } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              display_name: displayName
+            }
+          }
+        });
+        
         if (signUpError) throw signUpError;
         
         if (data.user) {
-          const randomCode = 'CB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-              { 
-                id: data.user.id, 
-                display_name: displayName, 
-                partner_code: randomCode
-              }
-            ]);
-          if (profileError) throw profileError;
+          // No need to manually insert into profiles anymore, 
+          // the SQL Trigger 'handle_new_user' does it automatically.
           onLogin(true);
         }
       } else if (mode === 'forgot') {
