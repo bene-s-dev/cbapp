@@ -26,6 +26,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
   }, []);
 
   useEffect(() => {
+    // Wenn es sich um ein Ranking handelt (mehr als 2 Optionen)
     if (dailyQs[step]?.o.length > 2 && sortableRef.current) {
       if (sortableInstance.current) sortableInstance.current.destroy();
       sortableInstance.current = new Sortable(sortableRef.current, {
@@ -34,10 +35,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         forceFallback: true,
         fallbackTolerance: 3,
         onEnd: () => {
-          const tags = document.querySelectorAll('.rank-tag');
-          tags.forEach((tag, idx) => {
-            (tag as HTMLElement).innerText = (idx + 1).toString();
-          });
+          updateRankingNumbers();
         }
       });
     }
@@ -46,43 +44,29 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     };
   }, [step, dailyQs]);
 
+  const updateRankingNumbers = () => {
+    const tags = document.querySelectorAll('.rank-tag');
+    tags.forEach((tag, idx) => {
+      (tag as HTMLElement).innerText = (idx + 1).toString();
+    });
+  };
+
   const loadDailyQuestions = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data: allMyAnswers } = await supabase
-      .from('answers')
-      .select('choice')
-      .eq('user_id', session.user.id);
-    
-    const usedTexts = allMyAnswers ? allMyAnswers.map(a => a.choice) : [];
-    const filterPool = (p: Question[]) => p.filter(q => !usedTexts.some(used => used.includes(q.q)));
-
-    const availableTot = filterPool(POOL.tot);
-    const availableRanking = filterPool(POOL.ranking);
-    const availableText = filterPool(POOL.text);
-
-    if (availableTot.length === 0 || availableRanking.length === 0 || availableText.length === 0) {
-      alert("Keine weiteren Fragen verfügbar! ❤️");
-      onComplete();
-      return;
-    }
-
+    // Wir holen uns die täglichen Fragen basierend auf dem Datum (Seed)
+    // Damit beide Partner die gleichen Fragen sehen.
     const seed = parseInt(dayKey.replace(/-/g, ''));
-    const shuffle = (array: any[]) => {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    };
+    
+    // Einfacher Shuffle mit Seed ist schwer in JS ohne Lib, 
+    // wir nutzen das Datum um ein Item aus dem Pool zu wählen.
     const getSeeded = (arr: any[], s: number) => arr[s % arr.length];
 
     setDailyQs([
-      getSeeded(shuffle(availableTot), seed),
-      getSeeded(shuffle(availableRanking), seed),
-      getSeeded(shuffle(availableText), seed)
+      getSeeded(POOL.tot, seed),
+      getSeeded(POOL.ranking, seed),
+      getSeeded(POOL.text, seed)
     ]);
     setLoading(false);
   };
@@ -94,7 +78,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     if (q.o.length === 2) {
       val = selectedTot || '';
     } else if (q.o.length > 2) {
-      const cards = document.querySelectorAll('.rank-card span:last-child');
+      const cards = document.querySelectorAll('.rank-card-text');
       val = Array.from(cards).map(s => (s as HTMLElement).innerText).join(" > ");
     } else {
       val = textVal.trim();
@@ -121,6 +105,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    // Wir speichern die Fragen-IDs oder Texte mit, um sie im Dashboard wiederherzustellen
     const signature = dailyQs.map(q => `[${q.q}]`).join("");
     const finalChoice = finalResults.join(" | ") + " " + signature;
 
@@ -138,61 +123,64 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse">Fragen werden geladen...</div>;
+  if (loading) return <div className="p-8 text-center animate-pulse text-white">Fragen werden geladen...</div>;
 
   const q = dailyQs[step];
 
   return (
-    <div className="animate-in fade-in duration-500 pb-20">
-      <div className="prog-dots">
-        {[0, 1, 2].map(i => (
-          <div key={i} className={`dot ${i === step ? 'active' : (i < step ? 'done' : '')}`}></div>
-        ))}
+    <div className="flex flex-col h-full animate-in fade-in duration-500">
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="prog-dots mb-8">
+          {[0, 1, 2].map(i => (
+            <div key={i} className={`dot ${i === step ? 'active' : (i < step ? 'done' : '')}`}></div>
+          ))}
+        </div>
+        
+        <div className="info-hint mb-6">
+          <span>💡</span> <span className="text-sm">{q.h}</span>
+        </div>
+        
+        <h2 className="text-3xl font-bold mb-8 text-white" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{q.q}</h2>
+
+        <div id="quiz-input" className="space-y-4">
+          {q.o.length === 2 && (
+            <div className="tot-grid">
+              {q.o.map((o, i) => (
+                <div 
+                  key={i} 
+                  className={`tot-box ${selectedTot === o ? 'selected' : ''}`}
+                  onClick={() => setSelectedTot(o)}
+                >
+                  {o}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {q.o.length > 2 && (
+            <div ref={sortableRef} className="space-y-3">
+              {q.o.map((o, i) => (
+                <div key={i} className="rank-card">
+                  <span className="rank-tag">{i + 1}</span>
+                  <span className="rank-card-text font-bold">{o}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {q.o.length === 0 && (
+            <textarea 
+              className="textarea-custom text-white bg-white/5 border-white/10"
+              placeholder="Deine Gedanken..."
+              value={textVal}
+              onChange={(e) => setTextVal(e.target.value)}
+              autoFocus
+            />
+          )}
+        </div>
       </div>
-      
-      <div className="info-hint">
-        <span>💡</span> <span>{q.h}</span>
-      </div>
-      
-      <h2 className="text-2xl font-bold mb-6">{q.q}</h2>
 
-      <div id="quiz-input">
-        {q.o.length === 2 && (
-          <div className="tot-grid">
-            {q.o.map((o, i) => (
-              <div 
-                key={i} 
-                className={`tot-box ${selectedTot === o ? 'selected' : ''}`}
-                onClick={() => setSelectedTot(o)}
-              >
-                {o}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {q.o.length > 2 && (
-          <div ref={sortableRef}>
-            {q.o.map((o, i) => (
-              <div key={i} className="rank-card">
-                <span className="rank-tag">{i + 1}</span>
-                <span>{o}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {q.o.length === 0 && (
-          <textarea 
-            className="textarea-custom"
-            placeholder="Deine Gedanken..."
-            value={textVal}
-            onChange={(e) => setTextVal(e.target.value)}
-          />
-        )}
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#f1f2f6] max-w-md mx-auto z-30">
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-[var(--bg)] border-t border-white/5 max-w-md mx-auto z-30">
         <button 
           onClick={handleNext}
           className="btn-action"

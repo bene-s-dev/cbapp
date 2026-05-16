@@ -13,7 +13,7 @@ import Profile from './components/Profile';
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ display_name: string, partner_name: string } | null>(null);
+  const [profile, setProfile] = useState<{ id: string, display_name: string, partner_name: string, partner_id: string | null } | null>(null);
   const [view, setView] = useState<'onboarding' | 'main'>('main');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'questions' | 'profile'>('dashboard');
 
@@ -42,7 +42,7 @@ export default function App() {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('display_name, partner_name, partner_id, partner_code')
+      .select('id, display_name, partner_name, partner_id, partner_code')
       .eq('id', userId)
       .single();
 
@@ -54,24 +54,24 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg)] text-white">
+      <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg)] text-white font-bold">
         <p className="animate-pulse">Lädt...</p>
       </div>
     );
   }
 
-  if (!session || !profile) {
+  if (!session) {
     return (
       <div className="h-screen w-screen overflow-hidden relative bg-[var(--bg)]">
-        <main className="h-full flex flex-col safe-top px-8 max-w-md mx-auto relative z-10 bg-white">
-          <Login onLogin={() => {}} />
-        </main>
+        <Login onLogin={() => {}} />
       </div>
     );
   }
 
   const renderContent = () => {
-    // Falls noch kein Partner verknüpft ist, zeigen wir das Onboarding (Step 4)
+    if (!profile) return null;
+
+    // Falls noch kein Partner verknüpft ist, zeigen wir das Onboarding
     if (!profile.partner_id && view !== 'main') {
       return <Onboarding onComplete={() => {
         fetchProfile(session.user.id);
@@ -99,7 +99,6 @@ export default function App() {
       }
     }
 
-    // Fallback: Falls Partner fehlt aber wir im Main-View sind (z.B. nach Abbruch)
     if (!profile.partner_id) {
        return <Onboarding onComplete={() => {
         fetchProfile(session.user.id);
@@ -111,35 +110,28 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative text-[#1E1B4B] select-none bg-[var(--bg)]">
+    <div className="h-screen w-screen overflow-hidden relative text-[#1E1B4B] select-none bg-[var(--bg)] flex flex-col">
       <div className="bg-aura" />
       
-      <div className="fixed top-0 left-0 right-0 h-[65px] px-[25px] flex justify-between items-center z-20 bg-white border-b-2 border-[#f1f2f6] max-w-md mx-auto">
-        <div className="text-[1.4rem] font-semibold bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent">
-          CB-App
-        </div>
-      </div>
-
-      <main className="h-full flex flex-col pt-[65px] pb-[100px] safe-top px-6 max-w-md mx-auto relative z-10 bg-white overflow-y-auto">
+      <main className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 pb-20 pt-8">
         {renderContent()}
       </main>
 
-      <nav className="nav-dock animate-in fade-in slide-in-from-bottom-10 duration-700 max-w-[calc(450px-48px)] mx-auto">
-        <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'nav-item-active' : ''}`}>
-          <Home className={`w-6 h-6 ${activeTab === 'dashboard' ? 'fill-current' : ''}`} />
-          <span className="text-[10px] font-bold">Home</span>
-        </button>
+      {profile?.partner_id && (
+        <nav className="nav-dock max-w-md mx-auto">
+          <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'nav-item-active' : ''}`}>
+            <Home className="w-6 h-6" />
+          </button>
 
-        <button onClick={() => setActiveTab('questions')} className={`nav-item ${activeTab === 'questions' ? 'nav-item-active' : ''}`}>
-          <MessageCircle className={`w-6 h-6 ${activeTab === 'questions' ? 'fill-current' : ''}`} />
-          <span className="text-[10px] font-bold">Fragen</span>
-        </button>
+          <button onClick={() => setActiveTab('questions')} className={`nav-item ${activeTab === 'questions' ? 'nav-item-active' : ''}`}>
+            <MessageCircle className="w-6 h-6" />
+          </button>
 
-        <button onClick={() => setActiveTab('profile')} className={`nav-item ${activeTab === 'profile' ? 'nav-item-active' : ''}`}>
-          <UserIcon className={`w-6 h-6 ${activeTab === 'profile' ? 'fill-current' : ''}`} />
-          <span className="text-[10px] font-bold">Profil</span>
-        </button>
-      </nav>
+          <button onClick={() => setActiveTab('profile')} className={`nav-item ${activeTab === 'profile' ? 'nav-item-active' : ''}`}>
+            <UserIcon className="w-6 h-6" />
+          </button>
+        </nav>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface LoginProps {
@@ -15,6 +15,15 @@ export default function Login({ onLogin }: LoginProps) {
   const [partnerName, setPartnerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  const [sloganWord, setSloganWord] = useState('bisschen');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSloganWord('Küsschen');
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,15 +36,11 @@ export default function Login({ onLogin }: LoginProps) {
         if (error) throw error;
         onLogin();
       } else if (mode === 'register') {
-        // 1. Registrierung
         const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
         if (signUpError) throw signUpError;
         
         if (data.user) {
-          // Zufälligen Partner-Code generieren (z.B. DUO-1234)
           const randomCode = 'CB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-
-          // 2. Profil erstellen
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([
@@ -49,7 +54,7 @@ export default function Login({ onLogin }: LoginProps) {
           if (profileError) throw profileError;
         }
         
-        setMessage({ type: 'success', text: 'Registrierung erfolgreich! Bitte prüfe deine E-Mails zur Bestätigung.' });
+        setMessage({ type: 'success', text: 'Registrierung erfolgreich! Bitte prüfe deine E-Mails.' });
         setMode('login');
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
@@ -64,74 +69,100 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full animate-in fade-in slide-in-from-bottom-4 duration-700 pb-32">
-      <h2 className="mt-5 text-4xl font-bold">CB-App</h2>
-      <p className="text-[var(--muted)] mb-9">
-        {mode === 'login' ? 'Willkommen zurück ❤️' : mode === 'register' ? 'Erstelle euer Konto ❤️' : 'Passwort zurücksetzen'}
-      </p>
+    <div className="flex flex-col items-center justify-center min-h-screen w-full px-6 animate-in fade-in duration-700">
       
-      <form onSubmit={handleSubmit} className="w-full space-y-4">
+      <div className="text-center mb-12">
+        <h1 className="text-7xl font-bold text-white mb-2" style={{ fontFamily: 'Fraunces, serif' }}>
+          Bisou
+        </h1>
+        <p className="text-white/80 text-lg font-bold" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          Jeden Tag ein <span key={sloganWord} className="animate-word text-[var(--primary)]">{sloganWord}</span> näher.
+        </p>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         {message && (
-          <div className={`p-4 rounded-2xl text-sm font-medium ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+          <div className={`p-4 rounded-2xl text-sm font-medium ${message.type === 'success' ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'}`}>
             {message.text}
           </div>
         )}
 
-        <input
-          type="email"
-          className="w-full p-5 rounded-[20px] border-2 border-[#eee] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all"
-          placeholder="E-Mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        
-        {mode !== 'forgot' && (
+        <div className="space-y-3">
           <input
-            type="password"
-            className="w-full p-5 rounded-[20px] border-2 border-[#eee] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all"
-            placeholder="Passwort"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="email"
+            className="w-full p-5 rounded-[22px] border-2 border-white/10 bg-white/5 text-white text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-white/30"
+            placeholder="E-Mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
-            minLength={6}
           />
-        )}
+          
+          {mode !== 'forgot' && (
+            <input
+              type="password"
+              className="w-full p-5 rounded-[22px] border-2 border-white/10 bg-white/5 text-white text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-white/30"
+              placeholder="Passwort"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          )}
 
-        {mode === 'register' && (
-          <>
-            <input
-              type="text"
-              className="w-full p-5 rounded-[20px] border-2 border-[#eee] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all"
-              placeholder="Dein Vorname"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              className="w-full p-5 rounded-[20px] border-2 border-[#eee] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all"
-              placeholder="Vorname deines Partners"
-              value={partnerName}
-              onChange={(e) => setPartnerName(e.target.value)}
-              required
-            />
-          </>
-        )}
+          {mode === 'register' && (
+            <>
+              <input
+                type="text"
+                className="w-full p-5 rounded-[22px] border-2 border-white/10 bg-white/5 text-white text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-white/30"
+                placeholder="Dein Vorname"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+              />
+              <input
+                type="text"
+                className="w-full p-5 rounded-[22px] border-2 border-white/10 bg-white/5 text-white text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-white/30"
+                placeholder="Vorname deines Partners"
+                value={partnerName}
+                onChange={(e) => setPartnerName(e.target.value)}
+                required
+              />
+            </>
+          )}
+        </div>
 
         <div className="flex flex-col gap-3 pt-4">
           <button type="submit" disabled={loading} className="btn-action">
-            {loading ? 'Lädt...' : mode === 'login' ? 'Einloggen ✨' : mode === 'register' ? 'Registrieren ✨' : 'Senden ✨'}
+            {loading ? 'Lädt...' : mode === 'login' ? 'Einloggen ✨' : mode === 'register' ? 'Konto erstellen ✨' : 'Link senden ✨'}
           </button>
           
-          <div className="flex justify-between px-2 text-sm font-medium text-[var(--muted)]">
-            {mode === 'login' ? (
-              <>
-                <button type="button" onClick={() => setMode('register')} className="hover:text-[var(--secondary)]">Neu hier? Registrieren</button>
-                <button type="button" onClick={() => setMode('forgot')} className="hover:text-[var(--secondary)]">Passwort vergessen?</button>
-              </>
+          {mode === 'login' && (
+            <button 
+              type="button" 
+              onClick={() => setMode('register')} 
+              className="btn-secondary"
+            >
+              Neu hier? Registrieren
+            </button>
+          )}
+
+          <div className="text-center pt-2">
+            {mode !== 'login' ? (
+              <button 
+                type="button" 
+                onClick={() => setMode('login')} 
+                className="text-white/60 text-sm font-medium hover:text-white underline underline-offset-4"
+              >
+                Zurück zum Login
+              </button>
             ) : (
-              <button type="button" onClick={() => setMode('login')} className="w-full text-center hover:text-[var(--secondary)]">Zurück zum Login</button>
+              <button 
+                type="button" 
+                onClick={() => setMode('forgot')} 
+                className="text-white/40 text-sm font-medium hover:text-white underline underline-offset-4"
+              >
+                Passwort vergessen?
+              </button>
             )}
           </div>
         </div>
