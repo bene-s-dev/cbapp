@@ -48,10 +48,15 @@ export default function Login({ onLogin }: LoginProps) {
         
         if (signUpError) throw signUpError;
         
-        if (data.user) {
-          // No need to manually insert into profiles anymore, 
-          // the SQL Trigger 'handle_new_user' does it automatically.
+        if (data.session) {
+          // User is logged in immediately (Confirm Email is OFF)
           onLogin(true);
+        } else {
+          // Email confirmation is required (Confirm Email is ON)
+          setMessage({ 
+            type: 'success', 
+            text: 'Registrierung fast fertig! ✨ Bitte klicke auf den Bestätigungslink in deiner E-Mail.' 
+          });
         }
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
