@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Camera, Link2, Sparkles, 
-  ArrowRight, Download, Share, PlusSquare, Copy
+  ArrowRight, Copy
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -12,28 +12,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
   const [myProfile, setMyProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
 
   useEffect(() => {
     fetchMyProfile();
-    
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
-    setIsStandalone(standalone);
-
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(ios);
-
-    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const fetchMyProfile = async () => {
@@ -54,10 +35,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     setLoading(true);
 
     try {
-      // 1. Partner finden
       const { data: partnerProfile, error: findError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, display_name')
         .eq('partner_code', partnerCodeInput.trim().toUpperCase())
         .single();
 
@@ -66,11 +46,13 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         return;
       }
 
-      // 2. Eigenes Profil aktualisieren
       const { data: { session } } = await supabase.auth.getSession();
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ partner_id: partnerProfile.id })
+        .update({ 
+          partner_id: partnerProfile.id,
+          partner_name: partnerProfile.display_name
+        })
         .eq('id', session?.user.id);
 
       if (updateError) throw updateError;
@@ -84,63 +66,52 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     }
   };
 
-  const handleInstall = async () => {
-    if (isIOS) {
-      setShowIOSOverlay(true);
-    } else if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        setStep(3);
-      }
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Das Bild ist zu groß. Bitte wähle ein Bild unter 5 MB aus.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id);
+
+      fetchMyProfile();
+    } catch (err: any) {
+      alert("Fehler beim Upload: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between py-12 animate-in fade-in duration-500 relative">
-      {showIOSOverlay && (
-        <div 
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 px-4 pb-8"
-          onClick={() => setShowIOSOverlay(false)}
-        >
-          <div className="w-full max-w-md bg-white rounded-[3rem] p-8 pb-10 space-y-8 animate-in slide-in-from-bottom-10 duration-500 shadow-2xl relative">
-            <div className="w-12 h-1.5 bg-[#f1f2f6] rounded-full mx-auto mb-4" />
-            <div className="space-y-2 text-center">
-              <h3 className="text-2xl font-bold text-[var(--text)]">App installieren</h3>
-              <p className="text-[var(--muted)] text-sm">Folge diesen Schritten in deinem Safari-Browser:</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 rounded-3xl bg-[var(--light-bg)] border border-[#eee]">
-                <div className="p-3 bg-white rounded-2xl shadow-sm">
-                  <Share className="w-6 h-6 text-[var(--secondary)]" />
-                </div>
-                <div>
-                  <p className="font-bold text-[var(--text)] text-sm">1. Tippe auf 'Teilen'</p>
-                  <p className="text-[11px] text-[var(--muted)]">In der Browser-Leiste unten</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 rounded-3xl bg-[var(--light-bg)] border border-[#eee]">
-                <div className="p-3 bg-white rounded-2xl shadow-sm">
-                  <PlusSquare className="w-6 h-6 text-[var(--secondary)]" />
-                </div>
-                <div>
-                  <p className="font-bold text-[var(--text)] text-sm">2. 'Zum Home-Bildschirm'</p>
-                  <p className="text-[11px] text-[var(--muted)]">Runterscrollen und hinzufügen</p>
-                </div>
-              </div>
-            </div>
-
-            <button onClick={() => setShowIOSOverlay(false)} className="btn-action">Verstanden</button>
-          </div>
-        </div>
-      )}
-
       <header>
         <div className="prog-dots">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className={`dot ${s === step ? 'active' : (s < step ? 'done' : '')}`} />
           ))}
         </div>
@@ -149,16 +120,16 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       <div className="flex-1 flex flex-col justify-center">
         {step === 1 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="p-6 rounded-[2.5rem] bg-[var(--light-bg)] inline-block">
+            <div className="p-6 rounded-[2.5rem] bg-white border border-purple-50 inline-block">
               <ShieldCheck className="w-12 h-12 text-[var(--secondary)]" />
             </div>
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-[var(--text)]">Datenschutz</h2>
-              <p className="text-[var(--muted)] leading-relaxed">
-                Deine Daten werden sicher in Supabase gespeichert. Wir nutzen sie nur für eure gemeinsamen Momente. ❤️
+              <h2 className="text-3xl font-bold text-[var(--text-main)]">Datenschutz</h2>
+              <p className="text-[var(--text)] leading-relaxed">
+                Deine Daten werden sicher in Supabase verschlüsselt. Wir haben keinen Zugriff auf eure privaten Nachrichten oder Fotos. Alles bleibt unter euch. ❤️
               </p>
             </div>
-            <label className="flex items-center gap-4 p-6 rounded-[28px] border-2 border-[#eee] bg-[var(--light-bg)]">
+            <label className="flex items-center gap-4 p-6 rounded-[28px] border-2 border-purple-50 bg-white shadow-sm">
               <input 
                 type="checkbox" 
                 className="w-6 h-6 rounded-lg accent-[var(--secondary)]"
@@ -171,63 +142,51 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         )}
 
         {step === 2 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="p-6 rounded-[2.5rem] bg-[var(--light-bg)] inline-block">
-              <Download className="w-12 h-12 text-[var(--secondary)]" />
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 text-center">
+            <div className="relative mx-auto w-32 flex flex-col items-center">
+              <label className="cursor-pointer block relative h-32 w-full mb-3">
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                <div className="w-32 h-32 rounded-[2.5rem] bg-white flex items-center justify-center border-2 border-dashed border-purple-100 overflow-hidden shadow-sm">
+                  {myProfile?.avatar_url ? (
+                    <img src={myProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-purple-200" />
+                  )}
+                </div>
+                <div className="absolute -bottom-2 -right-2 p-3 bg-[var(--secondary)] rounded-2xl shadow-xl">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              </label>
+              <p className="text-[10px] text-[var(--muted)] font-medium">max. 5 MB</p>
             </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-[var(--text)]">App installieren</h2>
-              <p className="text-[var(--muted)]">Für das beste Erlebnis, installiere CB-App auf deinem Home-Bildschirm.</p>
-            </div>
-
-            {((deferredPrompt || isIOS) && !isStandalone) && (
-              <button onClick={handleInstall} className="btn-action">Jetzt installieren ✨</button>
-            )}
-            
-            <button onClick={() => setStep(3)} className="text-[var(--secondary)] text-sm font-bold w-full hover:underline transition-all">
-              Im Webbrowser fortfahren
-            </button>
+            <h2 className="text-3xl font-bold text-[var(--text-main)]">Hallo {userName}!</h2>
+            <p className="text-[var(--text)]">Dein Profil ist bereit. Jetzt fehlt nur noch dein Partner.</p>
           </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 text-center">
-            <div className="relative mx-auto w-32 h-32">
-              <div className="w-32 h-32 rounded-[2.5rem] bg-[var(--light-bg)] flex items-center justify-center border-2 border-dashed border-[#eee]">
-                <Camera className="w-8 h-8 text-[#ccc]" />
-              </div>
-              <div className="absolute -bottom-2 -right-2 p-3 bg-[var(--secondary)] rounded-2xl shadow-xl">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <h2 className="text-3xl font-bold text-[var(--text)]">Hallo {userName}!</h2>
-            <p className="text-[var(--muted)]">Dein Profil ist bereit. Jetzt fehlt nur noch dein Partner.</p>
-          </div>
-        )}
-
-        {step === 4 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="p-6 rounded-[2.5rem] bg-[var(--light-bg)] inline-block">
+            <div className="p-6 rounded-[2.5rem] bg-white border border-purple-50 inline-block">
               <Link2 className="w-12 h-12 text-[var(--secondary)]" />
             </div>
             
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-[var(--text)]">Partner verknüpfen</h2>
-              <p className="text-[var(--muted)] text-sm">Dein Code zum Teilen:</p>
-              <div className="flex items-center justify-between bg-[var(--light-bg)] p-4 rounded-2xl border-2 border-dashed border-[var(--secondary)]">
+              <h2 className="text-3xl font-bold text-[var(--text-main)]">Partner verknüpfen</h2>
+              <p className="text-[var(--text)] text-sm">Dein Code zum Teilen:</p>
+              <div className="flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-dashed border-purple-200">
                 <span className="font-mono font-bold text-[var(--secondary)] tracking-widest">{myProfile?.partner_code || 'Wird geladen...'}</span>
-                <button onClick={() => { navigator.clipboard.writeText(myProfile?.partner_code); alert("Code kopiert!"); }} className="p-2 hover:bg-white rounded-xl transition-colors">
+                <button onClick={() => { navigator.clipboard.writeText(myProfile?.partner_code); alert("Code kopiert!"); }} className="p-2 hover:bg-purple-50 rounded-xl transition-colors">
                   <Copy className="w-5 h-5 text-[var(--secondary)]" />
                 </button>
               </div>
             </div>
 
             <div className="space-y-4">
-              <p className="text-[var(--muted)] text-sm">Oder gib den Code deines Partners ein:</p>
+              <p className="text-[var(--text)] text-sm">Oder gib den Code deines Partners ein:</p>
               <input 
                 type="text" 
                 placeholder="CB-XXXXXX" 
-                className="w-full p-5 rounded-[20px] border-2 border-[#eee] text-center font-mono tracking-widest uppercase text-[1.1rem]"
+                className="w-full p-5 rounded-[20px] border-2 border-purple-100 bg-white text-center font-mono tracking-widest uppercase text-[1.1rem] outline-none focus:border-[var(--secondary)]"
                 value={partnerCodeInput}
                 onChange={(e) => setPartnerCodeInput(e.target.value)}
               />
@@ -237,21 +196,21 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       </div>
 
       <div className="space-y-3">
-        {step === 4 ? (
+        {step === 3 ? (
           <button onClick={handleLinkPartner} disabled={loading || !partnerCodeInput} className="btn-action flex items-center justify-center gap-2">
             {loading ? 'Verknüpfe...' : 'Verknüpfen & Starten ❤️'}
           </button>
         ) : (
           <button 
-            disabled={step === 1 && !privacyAccepted}
+            disabled={(step === 1 && !privacyAccepted) || (step === 2 && loading)}
             onClick={() => setStep(step + 1)}
             className="btn-action flex items-center justify-center gap-2"
           >
-            Weiter <ArrowRight className="w-5 h-5" />
+            {loading ? 'Lädt...' : 'Weiter'} <ArrowRight className="w-5 h-5" />
           </button>
         )}
         
-        {step === 4 && (
+        {step === 3 && (
           <button onClick={onComplete} className="w-full text-[var(--muted)] text-sm font-medium hover:underline">
             Später verknüpfen
           </button>

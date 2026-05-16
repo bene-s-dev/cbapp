@@ -26,7 +26,6 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
   }, []);
 
   useEffect(() => {
-    // Wenn es sich um ein Ranking handelt (mehr als 2 Optionen)
     if (dailyQs[step]?.o.length > 2 && sortableRef.current) {
       if (sortableInstance.current) sortableInstance.current.destroy();
       sortableInstance.current = new Sortable(sortableRef.current, {
@@ -55,12 +54,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Wir holen uns die täglichen Fragen basierend auf dem Datum (Seed)
-    // Damit beide Partner die gleichen Fragen sehen.
     const seed = parseInt(dayKey.replace(/-/g, ''));
-    
-    // Einfacher Shuffle mit Seed ist schwer in JS ohne Lib, 
-    // wir nutzen das Datum um ein Item aus dem Pool zu wählen.
     const getSeeded = (arr: any[], s: number) => arr[s % arr.length];
 
     setDailyQs([
@@ -105,7 +99,6 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Wir speichern die Fragen-IDs oder Texte mit, um sie im Dashboard wiederherzustellen
     const signature = dailyQs.map(q => `[${q.q}]`).join("");
     const finalChoice = finalResults.join(" | ") + " " + signature;
 
@@ -123,32 +116,36 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse text-white">Fragen werden geladen...</div>;
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center p-8 text-center animate-pulse text-[#2D264B] font-bold">
+      Fragen werden geladen...
+    </div>
+  );
 
   const q = dailyQs[step];
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500">
-      <div className="flex-1 overflow-y-auto pb-32">
+    <div className="flex flex-col h-full animate-entrance">
+      <div className="flex-1 overflow-y-auto">
         <div className="prog-dots mb-8">
           {[0, 1, 2].map(i => (
             <div key={i} className={`dot ${i === step ? 'active' : (i < step ? 'done' : '')}`}></div>
           ))}
         </div>
         
-        <div className="info-hint mb-6">
+        <div className="info-hint mb-6 bg-purple-50 text-[var(--secondary)] border-purple-100">
           <span>💡</span> <span className="text-sm">{q.h}</span>
         </div>
         
-        <h2 className="text-3xl font-bold mb-8 text-white" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{q.q}</h2>
+        <h2 className="text-3xl font-bold mb-8 text-[#2D264B]" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{q.q}</h2>
 
-        <div id="quiz-input" className="space-y-4">
+        <div id="quiz-input" className="space-y-4 pb-12">
           {q.o.length === 2 && (
             <div className="tot-grid">
               {q.o.map((o, i) => (
                 <div 
                   key={i} 
-                  className={`tot-box ${selectedTot === o ? 'selected' : ''}`}
+                  className={`tot-box bg-white border-[#edf2f7] text-[#4A4468] ${selectedTot === o ? 'selected !bg-[var(--primary)] !text-white !border-[var(--primary)]' : ''} shadow-sm`}
                   onClick={() => setSelectedTot(o)}
                 >
                   {o}
@@ -160,8 +157,8 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
           {q.o.length > 2 && (
             <div ref={sortableRef} className="space-y-3">
               {q.o.map((o, i) => (
-                <div key={i} className="rank-card">
-                  <span className="rank-tag">{i + 1}</span>
+                <div key={i} className="rank-card bg-white border-[#edf2f7] text-[#4A4468] shadow-sm">
+                  <span className="rank-tag bg-[var(--secondary)] text-white">{i + 1}</span>
                   <span className="rank-card-text font-bold">{o}</span>
                 </div>
               ))}
@@ -170,7 +167,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
 
           {q.o.length === 0 && (
             <textarea 
-              className="textarea-custom text-white bg-white/5 border-white/10"
+              className="textarea-custom text-[#4A4468] bg-white border-[#edf2f7] shadow-sm placeholder:text-gray-300"
               placeholder="Deine Gedanken..."
               value={textVal}
               onChange={(e) => setTextVal(e.target.value)}
@@ -180,7 +177,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-[var(--bg)] border-t border-white/5 max-w-md mx-auto z-30">
+      <div className="pb-24 pt-4">
         <button 
           onClick={handleNext}
           className="btn-action"

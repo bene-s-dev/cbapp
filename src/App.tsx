@@ -13,48 +13,83 @@ import Profile from './components/Profile';
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ id: string, display_name: string, partner_name: string, partner_id: string | null } | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [view, setView] = useState<'onboarding' | 'main'>('main');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'questions' | 'profile'>('dashboard');
 
   useEffect(() => {
-    // Session beim Laden abrufen
+    // Initialen Session-Status abrufen
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, true);
       else setLoading(false);
     });
 
     // Auf Auth-Änderungen hören
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, true);
       else {
         setProfile(null);
         setLoading(false);
+        setView('main');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, initialFetch: boolean = false, isNewRegistration: boolean = false) => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, display_name, partner_name, partner_id, partner_code')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, partner_name, partner_id, partner_code, avatar_url, onboarding_completed')
+        .eq('id', userId)
+        .single();
 
-    if (!error && data) {
-      setProfile(data);
+      if (!error && data) {
+        setProfile(data);
+        // Onboarding NUR bei echter Neuregistrierung ODER falls noch nie abgeschlossen
+        if (isNewRegistration || (initialFetch && !data.onboarding_completed)) {
+          setView('onboarding');
+        } else if (initialFetch) {
+          setView('main');
+        }
+      } else {
+        // Fallback für neue User ohne Profilzeile
+        const fallback = { id: userId, display_name: 'User' };
+        setProfile(fallback);
+        setView('onboarding');
+      }
+    } catch (e) {
+      console.error("Profile fetch error:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleLoginSuccess = (isNew: boolean = false) => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) fetchProfile(user.id, true, isNew);
+    });
+  };
+
+  const handleOnboardingComplete = async () => {
+    if (session) {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', session.user.id);
+      
+      await fetchProfile(session.user.id);
+      setView('main');
+    }
   };
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg)] text-white font-bold">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#F8F7FF] text-[#2D264B] font-bold">
         <p className="animate-pulse">Lädt...</p>
       </div>
     );
@@ -62,62 +97,54 @@ export default function App() {
 
   if (!session) {
     return (
-      <div className="h-screen w-screen overflow-hidden relative bg-[var(--bg)]">
-        <Login onLogin={() => {}} />
+      <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto">
+        <div className="bg-aura" />
+        <Login onLogin={handleLoginSuccess} />
       </div>
     );
   }
 
   const renderContent = () => {
-    if (!profile) return null;
+    if (!profile) return (
+      <div className="flex items-center justify-center h-full text-[#2D264B]">
+        <p>Profil wird geladen...</p>
+      </div>
+    );
 
-    // Falls noch kein Partner verknüpft ist, zeigen wir das Onboarding
-    if (!profile.partner_id && view !== 'main') {
-      return <Onboarding onComplete={() => {
-        fetchProfile(session.user.id);
-        setView('main');
-      }} />;
+    if (view === 'onboarding') {
+      return <Onboarding onComplete={handleOnboardingComplete} />;
     }
 
-    if (view === 'main') {
-      switch (activeTab) {
-        case 'dashboard': 
-          return <Dashboard 
-            userName={profile.display_name} 
-            partnerName={profile.partner_name} 
-            onStartQuestions={() => setActiveTab('questions')} 
-          />;
-        case 'questions': 
-          return <Questions 
-            userName={profile.display_name} 
-            onComplete={() => setActiveTab('dashboard')} 
-          />;
-        case 'profile': 
-          return <Profile onLogout={async () => {
-            await supabase.auth.signOut();
-          }} />;
-      }
+    switch (activeTab) {
+      case 'dashboard': 
+        return <Dashboard 
+          userName={profile.display_name} 
+          partnerName={profile.partner_name || 'Partner'} 
+          onStartQuestions={() => setActiveTab('questions')} 
+        />;
+      case 'questions': 
+        return <Questions 
+          userName={profile.display_name} 
+          onComplete={() => setActiveTab('dashboard')} 
+        />;
+      case 'profile': 
+        return <Profile onLogout={async () => {
+          await supabase.auth.signOut();
+        }} />;
+      default:
+        return null;
     }
-
-    if (!profile.partner_id) {
-       return <Onboarding onComplete={() => {
-        fetchProfile(session.user.id);
-        setView('main');
-      }} />;
-    }
-
-    return null;
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative text-[#1E1B4B] select-none bg-[var(--bg)] flex flex-col">
+    <div className="h-screen w-screen overflow-hidden relative text-[#2D264B] select-none bg-[#F8F7FF] flex flex-col">
       <div className="bg-aura" />
       
-      <main className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 pb-20 pt-8">
+      <main className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 pb-24 pt-8">
         {renderContent()}
       </main>
 
-      {profile?.partner_id && (
+      {view === 'main' && (
         <nav className="nav-dock max-w-md mx-auto">
           <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'nav-item-active' : ''}`}>
             <Home className="w-6 h-6" />

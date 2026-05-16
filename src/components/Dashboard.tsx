@@ -29,14 +29,12 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // 1. Profil laden, um partner_id zu finden
     const { data: profile } = await supabase
       .from('profiles')
       .select('partner_id')
       .eq('id', session.user.id)
       .single();
 
-    // 2. Antworten für heute laden (eigene und partner)
     const userIds = [session.user.id];
     if (profile?.partner_id) userIds.push(profile.partner_id);
 
@@ -52,7 +50,6 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
     if (me) {
       setMeAnswered(true);
       setMyAnswers(me.choice.split(" [")[0].split(" | "));
-      setShowComparison(true);
     }
 
     if (other) {
@@ -60,42 +57,18 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
       setPartnerAnswers(other.choice.split(" [")[0].split(" | "));
     }
 
-    await loadDailyQuestions(session.user.id);
+    loadDailyQuestions();
     setLoading(false);
   };
 
-  const loadDailyQuestions = async (userId: string) => {
-    const { data: allMyAnswers } = await supabase
-      .from('answers')
-      .select('choice')
-      .eq('user_id', userId);
-    
-    const usedTexts = allMyAnswers ? allMyAnswers.map(a => a.choice) : [];
-    const filterPool = (p: Question[]) => p.filter(q => !usedTexts.some(used => used.includes(q.q)));
-
-    const availableTot = filterPool(POOL.tot);
-    const availableRanking = filterPool(POOL.ranking);
-    const availableText = filterPool(POOL.text);
-
-    if (availableTot.length === 0 || availableRanking.length === 0 || availableText.length === 0) {
-      return;
-    }
-
+  const loadDailyQuestions = () => {
     const seed = parseInt(dayKey.replace(/-/g, ''));
-    const shuffle = (array: any[]) => {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    };
     const getSeeded = (arr: any[], s: number) => arr[s % arr.length];
 
     setDailyQs([
-      getSeeded(shuffle(availableTot), seed),
-      getSeeded(shuffle(availableRanking), seed),
-      getSeeded(shuffle(availableText), seed)
+      getSeeded(POOL.tot, seed),
+      getSeeded(POOL.ranking, seed),
+      getSeeded(POOL.text, seed)
     ]);
   };
 
@@ -113,29 +86,42 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse">Lädt...</div>;
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center p-8 text-center animate-pulse text-[#2D264B] font-bold">
+      Lädt...
+    </div>
+  );
 
   if (showComparison) {
     return (
-      <div className="animate-in fade-in duration-500 pb-20">
-        <h2 className="text-3xl font-bold mb-6">Unsere Antworten</h2>
-        {dailyQs.map((q, i) => (
-          <div key={i} className="mb-6">
-            <div className="text-[0.75rem] font-bold text-[var(--muted)] uppercase mb-2.5">{q.q}</div>
-            <div className="tot-grid">
-              <div className="res-bubble bg-[#f1f0ff]">
-                <b>ICH</b>
-                {myAnswers[i] || ''}
-              </div>
-              <div className="res-bubble" style={{ background: partnerAnswered ? '#e3faf3' : '#fff1f1' }}>
-                <b>{partnerName.toUpperCase()}</b>
-                {partnerAnswered ? partnerAnswers?.[i] : '⌛ Wartet noch...'}
+      <div className="animate-entrance flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto pb-12">
+          <button 
+            onClick={() => setShowComparison(false)}
+            className="mb-4 text-xs font-bold text-[#A29BFE] uppercase tracking-widest hover:underline"
+          >
+            ← Zurück zur Übersicht
+          </button>
+          <h2 className="text-3xl font-bold mb-6 text-[#2D264B]">Unsere Antworten</h2>
+          {dailyQs.map((q, i) => (
+            <div key={i} className="mb-6">
+              <div className="text-[0.75rem] font-bold text-[#8E89AA] uppercase mb-2.5">{q.q}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="res-bubble bg-white border-[#edf2f7] text-[#4A4468] p-4 rounded-2xl shadow-sm">
+                  <b className="text-[#A29BFE] block text-[10px] mb-1">ICH</b>
+                  {myAnswers[i] || ''}
+                </div>
+                <div className="res-bubble bg-white border-[#edf2f7] text-[#4A4468] p-4 rounded-2xl shadow-sm">
+                  <b className="text-[#FF8A8A] block text-[10px] mb-1">{(partnerName || 'Partner').toUpperCase()}</b>
+                  {partnerAnswered ? partnerAnswers?.[i] : '⌛ Wartet...'}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#f1f2f6] max-w-md mx-auto z-30">
-          <button onClick={deleteMyOwn} className="btn-action">
+          ))}
+        </div>
+        
+        <div className="pb-32 pt-4">
+          <button onClick={deleteMyOwn} className="btn-secondary w-full py-4 text-sm bg-white border-[#edf2f7] text-[#4A4468] shadow-sm">
             Gedanken korrigieren 📝
           </button>
         </div>
@@ -144,9 +130,9 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <h2 className="text-3xl font-bold mb-2">{greeting}{userName}! ❤️</h2>
-      <div className="status-box">
+    <div className="animate-entrance flex flex-col h-full">
+      <h2 className="text-3xl font-bold mb-2 text-[#2D264B]">{greeting}{userName}! ❤️</h2>
+      <div className="status-box bg-white border-[#edf2f7] text-[#4A4468] p-6 rounded-[28px] mb-8 shadow-sm">
         <div className="flex justify-between items-center mb-5">
           <span>Meine Antwort:</span>
           <span className={`status-pill ${meAnswered ? 'pill-green' : 'pill-red'}`}>
@@ -154,14 +140,14 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span>{partnerName}:</span>
+          <span>{partnerName || 'Partner'}:</span>
           <span className={`status-pill ${partnerAnswered ? 'pill-green' : 'pill-red'}`}>
             {partnerAnswered ? 'Fertig ✅' : 'Offen'}
           </span>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#f1f2f6] max-w-md mx-auto z-30">
+      <div className="mt-auto pb-32">
         <button 
           onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
           className="btn-action"
