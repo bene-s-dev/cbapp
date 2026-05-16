@@ -147,10 +147,10 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
         </div>
       </div>
 
-      <div className="mt-auto pb-32">
+      <div className="mt-auto pb-4">
         <button 
           onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
-          className="btn-action"
+          className="btn-action w-full"
         >
           {meAnswered ? "Zu unseren Gedanken ✨" : "Jetzt starten 🚀"}
         </button>

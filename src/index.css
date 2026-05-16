@@ -115,6 +115,10 @@ html, body {
   .nav-item-active {
     @apply text-[var(--secondary)] bg-purple-50 scale-110;
   }
+
+  .input-base {
+    @apply w-full p-5 rounded-[22px] border-2 border-purple-100 bg-white text-[var(--text-main)] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-[var(--muted)]/50;
+  }
 }
 
 .animate-entrance {

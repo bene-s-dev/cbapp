@@ -9,54 +9,107 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import Questions from './components/Questions';
 import Profile from './components/Profile';
+import ResetPassword from './components/ResetPassword';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [dynamicPartnerName, setDynamicPartnerName] = useState<string | null>(null);
-  const [view, setView] = useState<'onboarding' | 'main'>('main');
+  const [view, setView] = useState<'onboarding' | 'main' | 'reset-password'>('main');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'questions' | 'profile'>('dashboard');
 
   useEffect(() => {
+    let isInitialFetch = true;
+
     // Initialen Session-Status abrufen
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id, true);
-      else setLoading(false);
+      console.log("🏁 Initial getSession fertig");
+      if (session) {
+        setSession(session);
+        fetchProfile(session.user.id);
+      } else {
+        console.log("ℹ️ Keine initiale Session");
+        setLoading(false);
+      }
+      isInitialFetch = false;
+    }).catch(err => {
+      console.error("❌ Fehler bei getSession:", err);
+      setLoading(false);
+      isInitialFetch = false;
     });
-// Auf Auth-Änderungen hören
-const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-  console.log("🔔 Auth Event:", event);
-  console.log("👤 Session:", session);
 
-  setSession(session);
-  if (session) {
-    console.log("✅ Session gefunden, lade Profil für:", session.user.id);
-    fetchProfile(session.user.id, true);
-  } else {
-    console.log("ℹ️ Keine Session vorhanden");
-    setProfile(null);
-    setDynamicPartnerName(null);
-    setLoading(false);
-    setView('main');
-  }
-});
+    // Auf Auth-Änderungen hören
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔔 Auth Event:", event);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        setView('reset-password');
+        setLoading(false);
+        return;
+      }
 
+      if (isInitialFetch) return; // Überspringen, wenn getSession noch läuft
+
+      setSession(session);
+      if (session) {
+        fetchProfile(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setDynamicPartnerName(null);
+        setLoading(false);
+        setView('main');
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string, initialFetch: boolean = false, isNewRegistration: boolean = false) => {
+
+  const fetchProfile = async (userId: string) => {
+    if (!userId) return;
+    console.log("🔍 fetchProfile gestartet für:", userId);
     setLoading(true);
+    
     try {
-      const { data, error } = await supabase
+      // 1. Versuche das Profil zu laden
+      let { data, error } = await supabase
         .from('profiles')
         .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (!error && data) {
+      if (error) {
+        console.error("❌ Fehler beim Profil-Abruf:", error.message);
+      }
+
+      // 2. Self-Healing: Wenn kein Profil da ist, versuchen wir es zu erstellen
+      if (!data) {
+        console.log("⚠️ Profil fehlt in Datenbank, erstelle es jetzt...");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: inserted, error: insertError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: userId,
+              display_name: user.user_metadata.display_name || 'User',
+              partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
+              onboarding_completed: false
+            }])
+            .select()
+            .maybeSingle();
+          
+          if (insertError) {
+             console.error("❌ Self-Healing fehlgeschlagen:", insertError.message);
+          } else {
+             console.log("✨ Profil erfolgreich erstellt!");
+             data = inserted;
+          }
+        }
+      }
+
+      if (data) {
+        console.log("✅ Profil bereit:", data);
         setProfile(data);
         
         // Dynamisch den Partner-Namen laden, falls vorhanden
@@ -65,7 +118,7 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessi
             .from('profiles')
             .select('display_name')
             .eq('id', data.partner_id)
-            .single();
+            .maybeSingle();
           
           if (partnerData) {
             setDynamicPartnerName(partnerData.display_name);
@@ -74,41 +127,43 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessi
           setDynamicPartnerName(null);
         }
 
-        // Onboarding NUR bei echter Neuregistrierung ODER falls noch nie abgeschlossen
-        if (isNewRegistration || (initialFetch && !data.onboarding_completed)) {
-          setView('onboarding');
-        } else if (initialFetch) {
-          setView('main');
-        }
+        // Onboarding Logik
+        setView(data.onboarding_completed ? 'main' : 'onboarding');
       } else {
-        // Fallback für neue User ohne Profilzeile
-        const fallback = { id: userId, display_name: 'User' };
-        setProfile(fallback);
-        setDynamicPartnerName(null);
-        setView('onboarding');
+        console.error("❌ Kein Profil verfügbar, lade Login...");
+        setSession(null);
       }
     } catch (e) {
-      console.error("Profile fetch error:", e);
+      console.error("❌ Schwerer Fehler in fetchProfile:", e);
     } finally {
+      console.log("🏁 fetchProfile beendet");
       setLoading(false);
     }
   };
 
-  const handleLoginSuccess = (isNew: boolean = false) => {
+  const handleLoginSuccess = () => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) fetchProfile(user.id, true, isNew);
+      if (user) fetchProfile(user.id);
     });
   };
 
   const handleOnboardingComplete = async () => {
     if (session) {
-      await supabase
-        .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('id', session.user.id);
-      
-      await fetchProfile(session.user.id);
-      setView('main');
+      setLoading(true); // Loader zeigen während DB Update
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ onboarding_completed: true })
+          .eq('id', session.user.id);
+        
+        if (error) throw error;
+        
+        // Profil neu laden (setzt dann automatisch setView('main'))
+        await fetchProfile(session.user.id);
+      } catch (e) {
+        console.error("Error completing onboarding:", e);
+        setLoading(false);
+      }
     }
   };
 
@@ -116,6 +171,16 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessi
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#F8F7FF] text-[#2D264B] font-bold">
         <p className="animate-pulse">Lädt...</p>
+      </div>
+    );
+  }
+
+  // Diese Ansichten dürfen auch ohne (volle) Session angezeigt werden
+  if (view === 'reset-password') {
+    return (
+      <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12">
+        <div className="bg-aura" />
+        <ResetPassword onComplete={() => setView('main')} />
       </div>
     );
   }
@@ -135,6 +200,10 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessi
         <p>Profil wird geladen...</p>
       </div>
     );
+
+    if (view === 'reset-password') {
+      return <ResetPassword onComplete={() => setView('main')} />;
+    }
 
     if (view === 'onboarding') {
       return <Onboarding onComplete={handleOnboardingComplete} />;

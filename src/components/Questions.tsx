@@ -177,10 +177,10 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         </div>
       </div>
 
-      <div className="pb-24 pt-4">
+      <div className="pb-4 pt-4 mt-auto">
         <button 
           onClick={handleNext}
-          className="btn-action"
+          className="btn-action w-full"
         >
           {step < 2 ? "Weiter ✨" : "Teilen ❤️"}
         </button>

@@ -6,8 +6,7 @@ import {
 import { supabase } from '../lib/supabase';
 
 export default function Onboarding({ onComplete }: { onComplete: () => void }) {
-  const [step, setStep] = useState(1);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [step, setStep] = useState(1); // 1: Photo, 2: Partner
   const [userName, setUserName] = useState('');
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
   const [myProfile, setMyProfile] = useState<any>(null);
@@ -43,6 +42,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
 
       if (findError || !partnerProfile) {
         alert("Code nicht gefunden! ❌");
+        setLoading(false);
         return;
       }
 
@@ -81,7 +81,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = fileName; // Nur der Dateiname, kein 'avatars/' davor
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -107,10 +107,10 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between py-12 animate-in fade-in duration-500 relative">
+    <div className="flex-1 flex flex-col justify-between pt-12 animate-in fade-in duration-500 relative">
       <header>
         <div className="prog-dots">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div key={s} className={`dot ${s === step ? 'active' : (s < step ? 'done' : '')}`} />
           ))}
         </div>
@@ -118,52 +118,34 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
 
       <div className="flex-1 flex flex-col justify-center">
         {step === 1 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="p-6 rounded-[2.5rem] bg-white border border-purple-50 inline-block">
-              <ShieldCheck className="w-12 h-12 text-[var(--secondary)]" />
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-[var(--text-main)]">Datenschutz</h2>
-              <p className="text-[var(--text)] leading-relaxed">
-                Deine Daten werden sicher in Supabase verschlüsselt. Wir haben keinen Zugriff auf eure privaten Nachrichten oder Fotos. Alles bleibt unter euch. ❤️
-              </p>
-            </div>
-            <label className="flex items-center gap-4 p-6 rounded-[28px] border-2 border-purple-50 bg-white shadow-sm">
-              <input 
-                type="checkbox" 
-                className="w-6 h-6 rounded-lg accent-[var(--secondary)]"
-                checked={privacyAccepted}
-                onChange={(e) => setPrivacyAccepted(e.target.checked)}
-              />
-              <span className="text-sm font-medium text-[var(--text)]">Ich akzeptiere die Bedingungen. ❤️</span>
-            </label>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 text-center">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 text-center px-4">
             <div className="relative mx-auto w-32 flex flex-col items-center">
-              <label className="cursor-pointer block relative h-32 w-full mb-3">
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                <div className="w-32 h-32 rounded-[2.5rem] bg-white flex items-center justify-center border-2 border-dashed border-purple-100 overflow-hidden shadow-sm">
+              <label className="cursor-pointer block relative h-32 w-full mb-3 group">
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={loading} />
+                <div className={`w-32 h-32 rounded-[2.5rem] bg-white flex items-center justify-center border-2 border-dashed border-purple-100 overflow-hidden shadow-sm transition-all group-hover:border-[var(--secondary)] ${loading ? 'opacity-50' : ''}`}>
                   {myProfile?.avatar_url ? (
                     <img src={myProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <Camera className="w-8 h-8 text-purple-200" />
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 p-3 bg-[var(--secondary)] rounded-2xl shadow-xl">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
               </label>
-              <p className="text-[10px] text-[var(--muted)] font-medium">max. 5 MB</p>
+              <button 
+                onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
+                disabled={loading}
+                className="bg-white border border-purple-100 px-4 py-2 rounded-xl text-[11px] font-bold text-[var(--secondary)] shadow-sm hover:bg-purple-50 transition-colors flex items-center gap-1.5"
+              >
+                <Camera className="w-3 h-3" />
+                {myProfile?.avatar_url ? 'Foto ändern' : 'Foto wählen'}
+              </button>
+              <p className="text-[10px] text-[var(--muted)] font-medium mt-3">max. 5 MB</p>
             </div>
-            <h2 className="text-3xl font-bold text-[var(--text-main)]">Hallo {userName}!</h2>
-            <p className="text-[var(--text)]">Dein Profil ist bereit. Jetzt fehlt nur noch dein Partner.</p>
+            <h2 className="text-3xl font-bold text-[var(--text-main)]">Hallo {userName}! ❤️</h2>
+            <p className="text-[var(--text)]">Schön, dass du da bist. Magst du noch ein Profilbild hochladen?</p>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="p-6 rounded-[2.5rem] bg-white border border-purple-50 inline-block">
               <Link2 className="w-12 h-12 text-[var(--secondary)]" />
@@ -194,22 +176,22 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         )}
       </div>
 
-      <div className="space-y-3">
-        {step === 3 ? (
+      <div className="space-y-3 pb-4">
+        {step === 2 ? (
           <button onClick={handleLinkPartner} disabled={loading || !partnerCodeInput} className="btn-action flex items-center justify-center gap-2">
             {loading ? 'Verknüpfe...' : 'Verknüpfen & Starten ❤️'}
           </button>
         ) : (
           <button 
-            disabled={(step === 1 && !privacyAccepted) || (step === 2 && loading)}
-            onClick={() => setStep(step + 1)}
+            disabled={loading}
+            onClick={() => setStep(2)}
             className="btn-action flex items-center justify-center gap-2"
           >
             {loading ? 'Lädt...' : 'Weiter'} <ArrowRight className="w-5 h-5" />
           </button>
         )}
         
-        {step === 3 && (
+        {step === 2 && (
           <button onClick={onComplete} className="w-full text-[var(--muted)] text-sm font-medium hover:underline">
             Später verknüpfen
           </button>

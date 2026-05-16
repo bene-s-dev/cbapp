@@ -89,7 +89,7 @@ export default function Profile({ onLogout, partnerName }: ProfileProps) {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = fileName;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -161,11 +161,11 @@ export default function Profile({ onLogout, partnerName }: ProfileProps) {
       )}
       
       {/* Header Bereich - Verkleinert */}
-      <div className="flex flex-col items-center mb-4 text-[var(--text-main)] shrink-0">
+      <div className="flex flex-col items-center mb-4 text-[var(--text-main)] shrink-0 pt-4">
         <div className="relative flex flex-col items-center">
-          <label className="cursor-pointer block relative mb-2">
+          <label className="cursor-pointer block relative mb-2 group">
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
-            <div className={`w-20 h-28 rounded-[2rem] bg-white p-1 border-2 border-purple-50 overflow-hidden shadow-sm transition-opacity ${uploading ? 'opacity-50' : ''}`}>
+            <div className={`w-20 h-28 rounded-[2rem] bg-white p-1 border-2 border-purple-50 overflow-hidden shadow-sm transition-all group-hover:border-[var(--secondary)] ${uploading ? 'opacity-50' : ''}`}>
               {profile?.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
@@ -180,11 +180,16 @@ export default function Profile({ onLogout, partnerName }: ProfileProps) {
                 />
               )}
             </div>
-            <div className="absolute -bottom-1 -right-1 p-1.5 bg-[var(--secondary)] rounded-lg shadow-lg border-2 border-white">
-              <Camera className="w-3.5 h-3.5 text-white" />
-            </div>
           </label>
-          <p className="text-[9px] text-[var(--muted)] font-medium">max. 5 MB</p>
+          <button 
+            onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
+            disabled={uploading}
+            className="bg-white border border-purple-50 px-3 py-1.5 rounded-lg text-[9px] font-bold text-[var(--secondary)] shadow-sm hover:bg-purple-50 transition-colors flex items-center gap-1"
+          >
+            <Camera className="w-2.5 h-2.5" />
+            Foto ändern
+          </button>
+          <p className="text-[8px] text-[var(--muted)] font-medium mt-2">max. 5 MB</p>
         </div>
         <div className="mt-2 text-center">
           <h2 className="text-xl font-bold">{profile?.display_name}</h2>
@@ -196,24 +201,26 @@ export default function Profile({ onLogout, partnerName }: ProfileProps) {
       </div>
 
       {/* Partner Code - Kompakter */}
-      <div className="glass-card p-4 border-[#edf2f7] bg-white mb-4 rounded-[22px] border-2 text-[var(--text)] shadow-sm mx-4 shrink-0">
-        <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest mb-2">Partner-Code</p>
-        <div className="flex items-center justify-between bg-[var(--bg)] p-2.5 rounded-xl border-2 border-dashed border-purple-100">
-          <span className="font-mono font-bold text-[var(--secondary)] text-sm tracking-widest">{profile?.partner_code}</span>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText(profile?.partner_code);
-              alert("Code kopiert!");
-            }}
-            className="p-1.5 hover:bg-white rounded-lg transition-colors shadow-sm"
-          >
-            <Copy className="w-4 h-4 text-[var(--secondary)]" />
-          </button>
+      <div className="px-4 shrink-0 mb-4">
+        <div className="glass-card p-4 border-[#edf2f7] bg-white rounded-[22px] border-2 text-[var(--text)] shadow-sm">
+          <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest mb-2">Partner-Code</p>
+          <div className="flex items-center justify-between bg-[var(--bg)] p-2.5 rounded-xl border-2 border-dashed border-purple-100">
+            <span className="font-mono font-bold text-[var(--secondary)] text-sm tracking-widest">{profile?.partner_code}</span>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(profile?.partner_code);
+                alert("Code kopiert!");
+              }}
+              className="p-1.5 hover:bg-white rounded-lg transition-colors shadow-sm"
+            >
+              <Copy className="w-4 h-4 text-[var(--secondary)]" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Settings List - Flex-Grow zum Ausfüllen des Platzes */}
-      <div className="space-y-2.5 px-4 overflow-hidden shrink min-h-0 flex-1">
+      <div className="space-y-2.5 px-4 overflow-y-auto shrink min-h-0 flex-1 scrollbar-hide">
         {((deferredPrompt || isIOS) && !isStandalone) && (
           <button onClick={handleInstall} className="w-full bg-white border-2 border-purple-100 p-3.5 rounded-[18px] flex items-center justify-between hover:bg-purple-50 transition-all text-[var(--text)] shadow-sm">
             <div className="flex items-center gap-3">
@@ -259,8 +266,8 @@ export default function Profile({ onLogout, partnerName }: ProfileProps) {
       </div>
 
       {/* Footer - Ganz unten fixiert */}
-      <div className="mt-auto pt-4 pb-28 space-y-4 text-center text-[var(--text)] shrink-0">
-        <button className="btn-action !p-3.5 !text-sm flex items-center justify-center gap-2 mx-4 w-auto">
+      <div className="mt-auto pt-4 pb-28 space-y-4 text-center text-[var(--text)] shrink-0 px-4">
+        <button className="btn-action !p-3.5 !text-sm flex items-center justify-center gap-2 w-full">
           <Heart className="w-4 h-4 fill-current" />
           Jetzt spenden
           <ExternalLink className="w-3.5 h-3.5 opacity-50" />
