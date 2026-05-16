@@ -14,6 +14,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [dynamicPartnerName, setDynamicPartnerName] = useState<string | null>(null);
   const [view, setView] = useState<'onboarding' | 'main'>('main');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'questions' | 'profile'>('dashboard');
 
@@ -31,6 +32,7 @@ export default function App() {
       if (session) fetchProfile(session.user.id, true);
       else {
         setProfile(null);
+        setDynamicPartnerName(null);
         setLoading(false);
         setView('main');
       }
@@ -44,12 +46,28 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, partner_name, partner_id, partner_code, avatar_url, onboarding_completed')
+        .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', userId)
         .single();
 
       if (!error && data) {
         setProfile(data);
+        
+        // Dynamisch den Partner-Namen laden, falls vorhanden
+        if (data.partner_id) {
+          const { data: partnerData } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', data.partner_id)
+            .single();
+          
+          if (partnerData) {
+            setDynamicPartnerName(partnerData.display_name);
+          }
+        } else {
+          setDynamicPartnerName(null);
+        }
+
         // Onboarding NUR bei echter Neuregistrierung ODER falls noch nie abgeschlossen
         if (isNewRegistration || (initialFetch && !data.onboarding_completed)) {
           setView('onboarding');
@@ -60,6 +78,7 @@ export default function App() {
         // Fallback für neue User ohne Profilzeile
         const fallback = { id: userId, display_name: 'User' };
         setProfile(fallback);
+        setDynamicPartnerName(null);
         setView('onboarding');
       }
     } catch (e) {
@@ -119,7 +138,7 @@ export default function App() {
       case 'dashboard': 
         return <Dashboard 
           userName={profile.display_name} 
-          partnerName={profile.partner_name || 'Partner'} 
+          partnerName={dynamicPartnerName || 'Partner'} 
           onStartQuestions={() => setActiveTab('questions')} 
         />;
       case 'questions': 
@@ -128,9 +147,12 @@ export default function App() {
           onComplete={() => setActiveTab('dashboard')} 
         />;
       case 'profile': 
-        return <Profile onLogout={async () => {
-          await supabase.auth.signOut();
-        }} />;
+        return <Profile 
+          partnerName={dynamicPartnerName}
+          onLogout={async () => {
+            await supabase.auth.signOut();
+          }} 
+        />;
       default:
         return null;
     }

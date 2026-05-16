@@ -22,7 +22,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     if (session) {
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', session.user.id)
         .single();
       setMyProfile(data);
@@ -50,8 +50,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          partner_id: partnerProfile.id,
-          partner_name: partnerProfile.display_name
+          partner_id: partnerProfile.id
         })
         .eq('id', session?.user.id);
 

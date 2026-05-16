@@ -6,9 +6,10 @@ import { supabase } from '../lib/supabase';
 
 interface ProfileProps {
   onLogout: () => void;
+  partnerName: string | null;
 }
 
-export default function Profile({ onLogout }: ProfileProps) {
+export default function Profile({ onLogout, partnerName }: ProfileProps) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +42,7 @@ export default function Profile({ onLogout }: ProfileProps) {
     if (session) {
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', session.user.id)
         .single();
       setProfile(data);
@@ -66,7 +67,7 @@ export default function Profile({ onLogout }: ProfileProps) {
       const { data: { session } } = await supabase.auth.getSession();
       await supabase
         .from('profiles')
-        .update({ partner_id: null, partner_name: null })
+        .update({ partner_id: null })
         .eq('id', session?.user.id);
       window.location.reload();
     }
@@ -189,7 +190,7 @@ export default function Profile({ onLogout }: ProfileProps) {
           <h2 className="text-xl font-bold">{profile?.display_name}</h2>
           <p className={`${profile?.partner_id ? 'text-[var(--secondary)]' : 'text-red-400'} text-[11px] font-medium flex items-center justify-center gap-1.5`}>
             <Heart className={`w-2.5 h-2.5 ${profile?.partner_id ? 'fill-current' : ''}`} /> 
-            {profile?.partner_id ? `Verbunden mit ${profile.partner_name || 'Partner'}` : 'Nicht verknüpft'}
+            {profile?.partner_id ? `Verbunden mit ${partnerName || 'Partner'}` : 'Nicht verknüpft'}
           </p>
         </div>
       </div>
