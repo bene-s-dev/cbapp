@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ShieldCheck, ArrowRight, Camera, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Mail } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (isNew?: boolean) => void;
@@ -10,13 +10,12 @@ type AuthMode = 'login' | 'register' | 'forgot';
 
 export default function Login({ onLogin }: LoginProps) {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [regStep, setRegStep] = useState(1); // 1: Auth, 2: Privacy, 3: Name
+  const [regStep, setRegStep] = useState(1); // 1: Info (Email, PW, Name), 2: Privacy
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -24,10 +23,10 @@ export default function Login({ onLogin }: LoginProps) {
   const [isKuss, setIsKuss] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsKuss(true);
-    }, 2000);
-    return () => clearTimeout(timer);
+    const interval = setInterval(() => {
+      setIsKuss(prev => !prev);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleRegisterFinal = async () => {
@@ -35,14 +34,14 @@ export default function Login({ onLogin }: LoginProps) {
     setMessage(null);
     
     try {
-      // Sign up with user metadata so the database trigger can catch it
+      // Sign up with display name in metadata
       const { data, error: signUpError } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             display_name: displayName,
-            avatar_url: avatarUrl // This will be null initially if uploaded later
           }
         }
       });
@@ -50,10 +49,8 @@ export default function Login({ onLogin }: LoginProps) {
       if (signUpError) throw signUpError;
       
       if (data.session) {
-        // User is logged in immediately (Confirm Email is OFF)
         onLogin(true);
       } else {
-        // Email confirmation is required (Confirm Email is ON)
         setMessage({ 
           type: 'success', 
           text: 'Registrierung fast fertig! ✨ Bitte klicke auf den Bestätigungslink in deiner E-Mail.' 
@@ -79,7 +76,9 @@ export default function Login({ onLogin }: LoginProps) {
       }
     } else if (mode === 'forgot') {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       if (error) {
         setMessage({ type: 'error', text: error.message });
       } else {
@@ -89,9 +88,6 @@ export default function Login({ onLogin }: LoginProps) {
     }
   };
 
-  const word1 = "Bisschen";
-  const word2 = "Küsschen";
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full px-6 animate-in fade-in duration-700">
       
@@ -99,27 +95,55 @@ export default function Login({ onLogin }: LoginProps) {
         <h1 className="text-7xl font-bold text-[var(--text-main)] mb-2" style={{ fontFamily: 'Fraunces, serif' }}>
           Bisou
         </h1>
-        <div className="text-[var(--text)] text-lg font-bold flex items-center justify-center h-8 relative overflow-hidden" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          <span>Jeden Tag ein&nbsp;</span>
-          <div className="relative inline-flex items-center justify-center min-w-[80px] h-full transition-all duration-700 ease-in-out">
-            <span 
-              className={`absolute transition-all duration-700 ease-in-out ${isKuss ? 'opacity-0 -translate-y-8' : 'opacity-100 translate-y-0'} text-[var(--primary)]`}
-            >
-              Bisschen
-            </span>
-            <span 
-              className={`absolute transition-all duration-700 ease-in-out ${isKuss ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} text-[var(--primary)]`}
-            >
-              Küsschen
-            </span>
+        <div className="text-[var(--text)] text-lg font-bold flex items-center justify-center h-8 relative" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          <span className={`transition-all duration-1000 ease-in-out ${isKuss ? '-translate-x-12 opacity-40' : 'translate-x-0 opacity-100'}`}>
+            Jeden Tag ein&nbsp;
+          </span>
+          <div className="relative inline-flex items-center justify-center min-w-[110px] h-full">
+            <div className="absolute inset-0 flex items-center justify-center">
+              {"Bisschen".split('').map((char, i) => (
+                <span 
+                  key={i}
+                  style={{ 
+                    transitionDelay: isKuss ? `${i * 40}ms` : `${(8-i) * 30}ms`,
+                  }}
+                  className={`inline-block transition-all duration-1000 ease-in-out ${
+                    isKuss 
+                      ? 'opacity-0 translate-y-8 translate-x-4 rotate-12 blur-sm' 
+                      : 'opacity-100 translate-y-0 translate-x-0 rotate-0 blur-0'
+                  } text-[var(--primary)]`}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              {"Küsschen".split('').map((char, i) => (
+                <span 
+                  key={i}
+                  style={{ 
+                    transitionDelay: isKuss ? `${i * 40}ms` : `${(8-i) * 30}ms`,
+                  }}
+                  className={`inline-block transition-all duration-1000 ease-in-out ${
+                    isKuss 
+                      ? 'opacity-100 translate-y-0 translate-x-0 rotate-0 blur-0' 
+                      : 'opacity-0 -translate-y-8 -translate-x-4 -rotate-12 blur-sm'
+                  } text-[var(--primary)]`}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
           </div>
-          <span>&nbsp;näher.</span>
+          <span className={`transition-all duration-1000 ease-in-out ${isKuss ? 'translate-x-12 opacity-40' : 'translate-x-0 opacity-100'}`}>
+            &nbsp;näher.
+          </span>
         </div>
       </div>
       
       <div className="w-full max-w-sm">
-        {message && (
-          <div className={`p-4 rounded-2xl text-sm font-medium mb-4 ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+        {message && message.type === 'error' && (
+          <div className="p-4 rounded-2xl text-sm font-medium mb-4 bg-red-100 text-red-700">
             {message.text}
           </div>
         )}
@@ -160,22 +184,35 @@ export default function Login({ onLogin }: LoginProps) {
 
         {mode === 'forgot' && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="email"
-              className="input-base"
-              placeholder="Deine E-Mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button type="submit" disabled={loading} className="btn-action w-full">
-              {loading ? 'Lädt...' : 'Link senden ✨'}
-            </button>
-            <div className="text-center pt-2">
-              <button type="button" onClick={() => setMode('login')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4">
-                Zurück zum Login
-              </button>
-            </div>
+            {message && message.type === 'success' && (
+              <div className="p-6 rounded-[2rem] bg-green-50 text-green-700 text-center mb-4 border border-green-100">
+                <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="font-bold mb-2">Email versendet!</p>
+                <p className="text-sm opacity-80">{message.text}</p>
+                <button type="button" onClick={() => { setMode('login'); setMessage(null); }} className="mt-6 text-sm font-bold underline">Zum Login</button>
+              </div>
+            )}
+            
+            {(!message || message.type === 'error') && (
+              <>
+                <input
+                  type="email"
+                  className="input-base"
+                  placeholder="Deine E-Mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <button type="submit" disabled={loading} className="btn-action w-full">
+                  {loading ? 'Lädt...' : 'Link senden ✨'}
+                </button>
+                <div className="text-center pt-2">
+                  <button type="button" onClick={() => setMode('login')} className="text-[var(--muted)] text-sm font-medium hover:text-[var(--text-main)] underline underline-offset-4">
+                    Zurück zum Login
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         )}
 
@@ -184,6 +221,14 @@ export default function Login({ onLogin }: LoginProps) {
             {regStep === 1 && (
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-center mb-6 text-[var(--text-main)]">Account erstellen</h2>
+                <input
+                  type="text"
+                  className="input-base text-center"
+                  placeholder="Dein Vorname"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  autoFocus
+                />
                 <input
                   type="email"
                   className="input-base"
@@ -199,7 +244,7 @@ export default function Login({ onLogin }: LoginProps) {
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button 
-                  disabled={!email || password.length < 6}
+                  disabled={!email || password.length < 6 || !displayName}
                   onClick={() => setRegStep(2)} 
                   className="btn-action w-full flex items-center justify-center gap-2"
                 >
@@ -213,59 +258,52 @@ export default function Login({ onLogin }: LoginProps) {
 
             {regStep === 2 && (
               <div className="space-y-6">
-                <div className="p-4 rounded-[2rem] bg-white border border-purple-50 inline-block">
-                  <ShieldCheck className="w-10 h-10 text-[var(--secondary)]" />
-                </div>
-                <h2 className="text-2xl font-bold text-[var(--text-main)]">Datenschutz</h2>
-                <p className="text-[var(--text)] text-sm leading-relaxed">
-                  Deine Daten werden sicher verschlüsselt. Wir haben keinen Zugriff auf eure privaten Nachrichten. ❤️
-                </p>
-                <label className="flex items-center gap-4 p-5 rounded-[22px] border-2 border-purple-50 bg-white">
-                  <input 
-                    type="checkbox" 
-                    className="w-5 h-5 rounded accent-[var(--secondary)]"
-                    checked={privacyAccepted}
-                    onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-[var(--text)]">Ich akzeptiere die Bedingungen. ❤️</span>
-                </label>
-                <button 
-                  disabled={!privacyAccepted}
-                  onClick={() => setRegStep(3)} 
-                  className="btn-action w-full flex items-center justify-center gap-2"
-                >
-                  Weiter <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-
-            {regStep === 3 && (
-              <div className="space-y-6 text-center">
-                <div className="relative mx-auto w-24">
-                  <div className="w-24 h-24 rounded-[2rem] bg-white flex items-center justify-center border-2 border-dashed border-purple-100 overflow-hidden shadow-sm">
-                    <Camera className="w-6 h-6 text-purple-200" />
+                {message && message.type === 'success' ? (
+                  <div className="p-6 rounded-[2rem] bg-green-50 text-green-700 text-center animate-entrance border border-green-100">
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Mail className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h2 className="text-xl font-bold mb-2 text-green-800">Fast geschafft! ✨</h2>
+                    <p className="text-sm leading-relaxed opacity-90">
+                      Wir haben eine Bestätigungsmail an <br/><b>{email}</b> geschickt.
+                    </p>
+                    <p className="text-xs mt-4 opacity-70">
+                      Bitte schau auch in deinem <b>Spam-Ordner</b> nach.
+                    </p>
+                    <button 
+                      onClick={() => { setMode('login'); setMessage(null); }}
+                      className="mt-8 text-sm font-bold text-green-700 underline underline-offset-4"
+                    >
+                      Zurück zum Login
+                    </button>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 p-2 bg-[var(--secondary)] rounded-xl shadow-lg">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-bold text-[var(--text-main)]">Wie heißt du?</h2>
-                <input
-                  type="text"
-                  className="input-base text-center"
-                  placeholder="Dein Vorname"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  autoFocus
-                />
-                <p className="text-[var(--muted)] text-xs">Foto kannst du später im Profil hochladen.</p>
-                <button 
-                  disabled={!displayName || loading}
-                  onClick={handleRegisterFinal} 
-                  className="btn-action w-full"
-                >
-                  {loading ? 'Lädt...' : 'Registrierung abschließen ✨'}
-                </button>
+                ) : (
+                  <>
+                    <div className="p-4 rounded-[2rem] bg-white border border-purple-50 inline-block">
+                      <ShieldCheck className="w-10 h-10 text-[var(--secondary)]" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-[var(--text-main)]">Datenschutz</h2>
+                    <p className="text-[var(--text)] text-sm leading-relaxed">
+                      Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.
+                    </p>
+                    <label className="flex items-center gap-4 p-5 rounded-[22px] border-2 border-purple-50 bg-white">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 rounded accent-[var(--secondary)]"
+                        checked={privacyAccepted}
+                        onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                      />
+                      <span className="text-sm font-medium text-[var(--text)]">Ich akzeptiere die Bedingungen. ❤️</span>
+                    </label>
+                    <button 
+                      disabled={!privacyAccepted || loading}
+                      onClick={handleRegisterFinal} 
+                      className="btn-action w-full flex items-center justify-center gap-2"
+                    >
+                      {loading ? 'Lädt...' : 'Registrierung abschließen ✨'}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

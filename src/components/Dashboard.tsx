@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, POOL, Question } from '../constants/questions';
+import { Users, Lock } from 'lucide-react';
 
 interface DashboardProps {
   userName: string;
@@ -17,6 +18,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   const [loading, setLoading] = useState(true);
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
   const [showComparison, setShowComparison] = useState(false);
+  const [hasPartner, setHasPartner] = useState(false);
 
   const dayKey = new Date().toISOString().split('T')[0];
 
@@ -35,8 +37,11 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
       .eq('id', session.user.id)
       .single();
 
+    const isLinked = !!profile?.partner_id;
+    setHasPartner(isLinked);
+
     const userIds = [session.user.id];
-    if (profile?.partner_id) userIds.push(profile.partner_id);
+    if (isLinked) userIds.push(profile.partner_id);
 
     const { data: answers } = await supabase
       .from('answers')
@@ -45,7 +50,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
       .eq('day_key', dayKey);
 
     const me = answers?.find(a => a.user_id === session.user.id);
-    const other = profile?.partner_id ? answers?.find(a => a.user_id === profile.partner_id) : null;
+    const other = isLinked ? answers?.find(a => a.user_id === profile.partner_id) : null;
 
     if (me) {
       setMeAnswered(true);
@@ -132,28 +137,54 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   return (
     <div className="animate-entrance flex flex-col h-full">
       <h2 className="text-3xl font-bold mb-2 text-[#2D264B]">{greeting}{userName}! ❤️</h2>
-      <div className="status-box bg-white border-[#edf2f7] text-[#4A4468] p-6 rounded-[28px] mb-8 shadow-sm">
-        <div className="flex justify-between items-center mb-5">
-          <span>Meine Antwort:</span>
-          <span className={`status-pill ${meAnswered ? 'pill-green' : 'pill-red'}`}>
-            {meAnswered ? 'Fertig ✅' : 'Noch offen'}
-          </span>
+      
+      {!hasPartner ? (
+        <div className="status-box bg-purple-50 border-purple-100 text-[#4A4468] p-6 rounded-[28px] mb-8 shadow-sm flex flex-col items-center text-center">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-sm text-[var(--secondary)]">
+            <Users className="w-6 h-6" />
+          </div>
+          <p className="font-bold mb-1">Partner verknüpfen</p>
+          <p className="text-sm opacity-80 mb-4">Du musst erst einen Partner verknüpfen, um Fragen beantworten zu können.</p>
+          <button 
+            onClick={() => window.location.href = '#profile'} // Dummy logic for now, app.tsx handles view
+            className="text-sm font-bold text-[var(--secondary)] underline"
+          >
+            Jetzt Code teilen
+          </button>
         </div>
-        <div className="flex justify-between items-center">
-          <span>{partnerName || 'Partner'}:</span>
-          <span className={`status-pill ${partnerAnswered ? 'pill-green' : 'pill-red'}`}>
-            {partnerAnswered ? 'Fertig ✅' : 'Offen'}
-          </span>
+      ) : (
+        <div className="status-box bg-white border-[#edf2f7] text-[#4A4468] p-6 rounded-[28px] mb-8 shadow-sm">
+          <div className="flex justify-between items-center mb-5">
+            <span>Meine Antwort:</span>
+            <span className={`status-pill ${meAnswered ? 'pill-green' : 'pill-red'}`}>
+              {meAnswered ? 'Fertig ✅' : 'Noch offen'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>{partnerName || 'Partner'}:</span>
+            <span className={`status-pill ${partnerAnswered ? 'pill-green' : 'pill-red'}`}>
+              {partnerAnswered ? 'Fertig ✅' : 'Offen'}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-auto pb-4">
-        <button 
-          onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
-          className="btn-action w-full"
-        >
-          {meAnswered ? "Zu unseren Gedanken ✨" : "Jetzt starten 🚀"}
-        </button>
+        {hasPartner ? (
+          <button 
+            onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
+            className="btn-action w-full"
+          >
+            {meAnswered ? "Zu unseren Gedanken ✨" : "Jetzt starten 🚀"}
+          </button>
+        ) : (
+          <button 
+            disabled
+            className="btn-action w-full opacity-50 flex items-center justify-center gap-2"
+          >
+            <Lock className="w-4 h-4" /> Start gesperrt
+          </button>
+        )}
       </div>
     </div>
   );

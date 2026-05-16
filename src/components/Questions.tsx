@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { POOL, Question } from '../constants/questions';
 import Sortable from 'sortablejs';
-import confetti from 'canvas-confetti';
 
 interface QuestionsProps {
   userName: string;
@@ -111,7 +110,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     if (error) {
       alert("Fehler beim Speichern!");
     } else { 
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); 
+      // Confetti removed per user request to avoid bugs with result display
       onComplete();
     }
   };
