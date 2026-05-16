@@ -117,7 +117,7 @@ html, body {
   }
 
   .input-base {
-    @apply w-full p-5 rounded-[22px] border-2 border-purple-100 bg-white text-[var(--text-main)] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-[var(--muted)]/50;
+    @apply w-full p-5 rounded-[22px] border-2 border-purple-100 bg-white text-[var(--text-main)] text-[1.1rem] outline-none focus:border-[var(--secondary)] transition-all placeholder:text-[#8E89AA]/50;
   }
 }
 
