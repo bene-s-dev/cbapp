@@ -29,21 +29,38 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   }, [initialProfile]);
 
   useEffect(() => {
+    const checkStandalone = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             window.matchMedia('(display-mode: minimal-ui)').matches || 
+             window.matchMedia('(display-mode: fullscreen)').matches ||
+             (navigator as any).standalone || 
+             document.referrer.includes('android-app://') ||
+             urlParams.get('mode') === 'standalone';
+    };
+
     const ua = navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-    const android = /Android/.test(ua);
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
-    setIsIOS(ios);
-    setIsAndroid(android);
-    setIsStandalone(standalone);
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
+    setIsAndroid(/Android/.test(ua));
+    setIsStandalone(checkStandalone());
 
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setDeferredPrompt(null);
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -75,6 +92,23 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     }
   };
 
+  const handleUnlinkPartner = async () => {
+    if (!profile?.partner_id) return;
+    if (!window.confirm("Möchtest du die Verknüpfung mit deinem Partner wirklich aufheben?")) return;
+    
+    setIsLinking(true);
+    try {
+      const partnerId = profile.partner_id;
+      await supabase.from('profiles').update({ partner_id: null }).eq('id', profile.id);
+      await supabase.from('profiles').update({ partner_id: null }).eq('id', partnerId);
+      window.location.reload();
+    } catch (err) {
+      alert("Fehler beim Aufheben der Verknüpfung.");
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
   const handleLinkPartner = async () => {
     if (!partnerCodeInput) return;
     setIsLinking(true);
@@ -84,6 +118,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         alert("Partner-Code wurde nicht gefunden.");
         return;
       }
+
+      if (partnerP.id === profile.id) {
+        alert("Du kannst dich nicht mit dir selbst verknüpfen! ✨");
+        return;
+      }
+
       await supabase.from('profiles').update({ partner_id: partnerP.id }).eq('id', profile.id);
       await supabase.from('profiles').update({ partner_id: profile.id }).eq('id', partnerP.id);
       window.location.reload();
@@ -134,12 +174,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           <div className="w-10 h-10" />
         </div>
 
-        <header className="flex flex-col items-center gap-2 mb-6">
+        <header className="flex flex-col items-center gap-2 mb-8">
           <label className="relative cursor-pointer group">
             <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
             <div className="w-20 h-20 rounded-[2rem] bg-white border-2 border-purple-100 flex items-center justify-center overflow-hidden transition-all relative shadow-sm">
-              {profile?.avatar_url ? (<img src={profile.avatar_url} alt="P" className="w-full h-full object-cover" />) : (<Camera className="w-8 h-8 text-purple-300" />)}
-              {loading && (<div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10"><div className="w-5 h-5 border-2 border-[var(--secondary)] border-t-transparent rounded-full animate-spin"></div></div>)}
+              {profile?.avatar_url ? (<img src={profile.avatar_url} alt="P" className="w-full h-full object-cover" />) : (<Camera className="w-6 h-6 text-purple-300" />)}
+              {loading && (<div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10"><div className="w-4 h-4 border-2 border-[var(--secondary)] border-t-transparent rounded-full animate-spin"></div></div>)}
               <div className="absolute bottom-0 right-0 bg-[var(--secondary)] p-1.5 rounded-tl-xl z-20"><Pencil className="w-3.5 h-3.5 text-white" /></div>
             </div>
           </label>
@@ -170,9 +210,18 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           <div className="status-box p-3.5">
             <h3 className="text-[8px] font-bold text-[var(--muted)] uppercase tracking-[0.2em] mb-2 px-1">Verknüpfung</h3>
             {profile?.partner_id ? (
-              <div className="flex items-center gap-3 text-[var(--accent-green)] bg-green-50 p-3 rounded-xl border border-green-100">
-                <Heart className="w-4 h-4 fill-current" />
-                <span className="font-bold text-sm text-green-800">{profile.display_name} & {partnerProfile?.display_name || 'Partner'}</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-[var(--accent-green)] bg-green-50 p-3 rounded-xl border border-green-100">
+                  <Heart className="w-4 h-4 fill-current" />
+                  <span className="font-bold text-sm text-green-800">{profile.display_name} & {partnerProfile?.display_name || 'Partner'}</span>
+                </div>
+                <button 
+                  onClick={handleUnlinkPartner}
+                  disabled={isLinking}
+                  className="w-full text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors py-1 flex items-center justify-center gap-1"
+                >
+                  <AlertCircle className="w-3 h-3" /> Partner entfernen
+                </button>
               </div>
             ) : (
               <div className="space-y-2">

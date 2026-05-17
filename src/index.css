@@ -27,16 +27,34 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body, #root {
-  margin: 0; padding: 0; width: 100%; height: 100svh; 
-  background-color: var(--bg); 
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: var(--text-main); 
+html {
+  background-color: var(--bg);
+  height: 100%;
   overflow: hidden;
-  position: fixed;
 }
 
-#root { display: flex; flex-direction: column; }
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  height: 100svh;
+  background-color: var(--bg);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text-main);
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* Fix for potential black bars on iOS */
+  position: relative;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 .bg-aura {
   position: absolute; inset: 0; z-index: -1; overflow: hidden; 
@@ -82,11 +100,11 @@ html, body, #root {
   .res-bubble b { @apply text-[9px] text-[var(--muted)] uppercase tracking-widest font-bold; }
 
   .nav-dock {
-    @apply fixed bottom-8 left-4 right-4 h-20 bg-white/90 backdrop-blur-xl border-2 border-[var(--card-border)] rounded-[2.5rem] flex items-center justify-around px-2 z-50 shadow-lg;
-    bottom: calc(2rem + var(--sab));
+    @apply fixed bottom-6 left-4 right-4 h-16 bg-white/90 backdrop-blur-xl border-2 border-[var(--card-border)] rounded-[2rem] flex items-center justify-around px-2 z-50 shadow-lg;
+    bottom: calc(1.5rem + var(--sab));
   }
 
-  .nav-item { @apply p-4 rounded-2xl transition-all duration-300 text-purple-200; }
+  .nav-item { @apply p-3 rounded-xl transition-all duration-300 text-purple-200; }
   .nav-item-active { @apply text-[var(--secondary)] bg-purple-50 scale-110; }
 
   .input-base {

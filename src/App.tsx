@@ -12,6 +12,8 @@ import Questions from './components/Questions';
 import Profile from './components/Profile';
 import ResetPassword from './components/ResetPassword';
 import LoadingSkeleton from './components/LoadingSkeleton';
+import { getDailyKey } from './lib/dateUtils';
+import { FALLBACK_QUESTIONS } from './constants/questions';
 
 // Separate Layout component to prevent remounting on navigation
 function AppLayout({ 
@@ -22,6 +24,7 @@ function AppLayout({
 }: { 
   children: React.ReactNode; 
   profile: any; 
+  partnerProfile: any;
   showLockedModal: boolean;
   setShowLockedModal: (val: boolean) => void;
 }) {
@@ -32,11 +35,28 @@ function AppLayout({
     return <Navigate to="/onboarding" replace />;
   }
 
+  const isQuestions = location.pathname === '/questions';
+  const showHeader = profile.onboarding_completed && !isQuestions;
+
   return (
     <div className="h-[100svh] w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
       <div className="bg-aura" />
       
-      <main className="flex-1 flex flex-col relative z-10 px-4 pb-32 pt-10 max-w-md mx-auto w-full overflow-visible">
+      {showHeader && (
+        <header className="px-4 z-20 relative max-w-md mx-auto w-full" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
+          <div className="flex items-center justify-between min-h-[40px] relative">
+            <h1 className="text-2xl font-bold text-[var(--text-main)] tracking-tight select-none" style={{ fontFamily: 'Fraunces, serif' }}>
+              Bisou
+            </h1>
+            <div className="w-10 h-10" />
+          </div>
+        </header>
+      )}
+
+      <main 
+        className="flex-1 flex flex-col relative z-10 px-4 pb-32 max-w-md mx-auto w-full overflow-visible"
+        style={{ paddingTop: showHeader ? '0' : 'calc(1.5rem + var(--sat))' }}
+      >
         {children}
       </main>
 
@@ -95,19 +115,21 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [partnerProfile, setPartnerProfile] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [showLockedModal, setShowLockedModal] = useState(false);
 
   const navigate = useNavigate();
+  const dayKey = getDailyKey();
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*, partner:partner_id(id, display_name, avatar_url)')
-        .eq('id', userId)
-        .maybeSingle();
+      const [profileRes, questionsRes] = await Promise.all([
+        supabase.from('profiles').select('*, partner:partner_id(id, display_name, avatar_url)').eq('id', userId).maybeSingle(),
+        supabase.from('daily_questions').select('questions').eq('day_key', dayKey).maybeSingle()
+      ]);
 
-      if (error) throw error;
+      if (profileRes.error) throw profileRes.error;
+      const data = profileRes.data;
 
       if (!data) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -123,16 +145,27 @@ export default function App() {
         }
       } else {
         setProfile(data);
-        if (data.partner) {
-          setPartnerProfile(data.partner);
-        }
+        if (data.partner) setPartnerProfile(data.partner);
+
+        const userIds = [userId];
+        if (data.partner_id) userIds.push(data.partner_id);
+
+        const { data: answers } = await supabase.from('answers').select('*').in('user_id', userIds).eq('day_key', dayKey);
+        
+        const qData = questionsRes.data?.questions;
+        const currentQs = qData ? [qData.tot, qData.ranking, qData.text] : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
+
+        setDashboardData({
+          answers: answers || [],
+          questions: currentQs
+        });
       }
     } catch (e: any) {
       console.error("Profil-Fehler:", e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dayKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -162,11 +195,29 @@ export default function App() {
       else {
         setProfile(null);
         setPartnerProfile(null);
+        setDashboardData(null);
         setLoading(false);
       }
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, [fetchProfile]);
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await supabase.auth.signOut();
+      setSession(null);
+      setProfile(null);
+      setPartnerProfile(null);
+      setDashboardData(null);
+      navigate('/signin', { replace: true });
+    } catch (err) {
+      console.error("Logout-Fehler:", err);
+      window.location.href = '/signin';
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOnboardingComplete = async () => {
     if (session) {
@@ -187,7 +238,7 @@ export default function App() {
       
       {session && profile ? (
         <Route path="*" element={
-          <AppLayout profile={profile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
+          <AppLayout profile={profile} partnerProfile={partnerProfile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
             <Routes>
               <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
               <Route path="/dashboard" element={<Dashboard 
@@ -196,13 +247,14 @@ export default function App() {
                 partnerName={partnerProfile?.display_name || 'Partner'} 
                 partnerAvatar={partnerProfile?.avatar_url}
                 partnerId={profile.partner_id}
+                dashboardData={dashboardData}
                 onStartQuestions={() => {
                   if (!profile.partner_id) setShowLockedModal(true);
                   else navigate('/questions');
                 }} 
               />} />
-              <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} onComplete={() => navigate('/dashboard')} /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={() => supabase.auth.signOut()} />} />
+              <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} onComplete={() => window.location.reload()} /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={handleLogout} />} />
               <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
             </Routes>
           </AppLayout>

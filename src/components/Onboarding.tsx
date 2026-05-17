@@ -60,6 +60,11 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      if (partnerProfile.id === session.user.id) {
+        alert("Du kannst dich nicht mit dir selbst verknüpfen! ✨");
+        return;
+      }
+
       const { error: updateMeError } = await supabase
         .from('profiles')
         .update({ partner_id: partnerProfile.id })
