@@ -32,7 +32,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
   margin: 0; 
   padding: 0; 
   width: 100%; 
@@ -63,17 +63,12 @@ html, body {
               var(--bg); 
 }
 
-@keyframes ripple {
-    0% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 118, 117, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0); }
-}
+
 
 @layer components {
   .btn-action { 
     @apply w-full p-5 rounded-[22px] border-none text-white font-bold text-lg cursor-pointer transition-all duration-300 flex items-center justify-center gap-2;
     background: linear-gradient(135deg, var(--primary), var(--secondary)); 
-    box-shadow: 0 10px 25px rgba(255, 118, 117, 0.2);
   }
   
   .btn-secondary {
@@ -84,13 +79,13 @@ html, body {
     @apply border-[var(--secondary)] text-[var(--secondary)];
   }
 
-  .btn-action:disabled { @apply bg-[#dfe6e9] text-[#b2bec3] shadow-none cursor-not-allowed opacity-50; }
+  .btn-action:disabled { @apply bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed opacity-50; }
   .btn-action:active:not(:disabled) { @apply scale-95; }
 
-  .status-box { @apply bg-white rounded-[28px] p-6 border border-purple-50 shadow-sm; }
+  .status-box { @apply bg-white rounded-[28px] p-6 border border-purple-50; }
   .status-pill { @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider; }
   .pill-green { @apply bg-green-50 text-[var(--accent-green)]; }
-  .pill-red { @apply bg-red-50 text-[var(--primary)] animate-[ripple_2s_infinite]; }
+  .pill-red { @apply bg-red-50 text-[var(--primary)]; }
 
   .info-hint {
     @apply bg-purple-50 text-[var(--secondary)] px-5 py-4 rounded-[22px] text-sm flex items-start gap-3 font-medium border border-purple-100/50;
@@ -103,26 +98,26 @@ html, body {
   .dot.done { @apply bg-[var(--accent-green)]; }
 
   .rank-card { 
-    @apply bg-white border-2 border-purple-50 p-5 rounded-[22px] flex items-center gap-4 cursor-grab touch-none shadow-sm transition-all duration-200 select-none;
+    @apply bg-white border-2 border-purple-50 p-5 rounded-[22px] flex items-center gap-4 cursor-grab touch-none transition-all duration-200 select-none;
   }
   .rank-tag { @apply bg-[var(--secondary)] text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0; }
   .sortable-ghost { @apply opacity-40 bg-purple-50 border-2 border-dashed border-[var(--secondary)]; }
   
   .tot-grid { @apply grid grid-cols-2 gap-4 w-full; }
-  .tot-box { @apply bg-white border-2 border-purple-50 rounded-[28px] py-8 px-4 text-center font-bold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300 shadow-sm; }
-  .tot-box.selected { @apply bg-[var(--primary)] text-white border-[var(--primary)] -translate-y-1 shadow-lg shadow-red-200; }
+  .tot-box { @apply bg-white border-2 border-purple-50 rounded-[28px] py-8 px-4 text-center font-bold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300; }
+  .tot-box.selected { @apply bg-[var(--primary)] text-white border-[var(--primary)] -translate-y-1; }
 
   .textarea-custom { @apply w-full h-32 rounded-[28px] border-2 border-purple-50 p-6 text-lg outline-none bg-white resize-none transition-all focus:border-[var(--secondary)]; }
 
-  .res-bubble { @apply p-5 rounded-[22px] text-sm border border-purple-50 bg-white shadow-sm flex flex-col gap-1; }
+  .res-bubble { @apply p-5 rounded-[22px] text-sm border border-purple-50 bg-white flex flex-col gap-1; }
   .res-bubble b { @apply text-[10px] text-[var(--muted)] uppercase tracking-widest; }
 
   .glass-card {
-    @apply bg-white/80 backdrop-blur-xl border border-purple-100/50 rounded-[2.5rem] shadow-xl shadow-purple-500/5;
+    @apply bg-white/80 backdrop-blur-xl border border-purple-100/50 rounded-[2.5rem];
   }
 
   .nav-dock {
-    @apply fixed bottom-8 left-6 right-6 h-20 glass-card flex items-center justify-around px-2 z-50;
+    @apply fixed bottom-8 left-4 right-4 h-20 glass-card flex items-center justify-around px-2 z-50;
     /* Respect safe area bottom on iOS */
     bottom: calc(2rem + var(--sab));
   }
@@ -138,6 +133,22 @@ html, body {
   .input-base {
     @apply w-full p-5 rounded-[22px] border-2 border-purple-100 bg-white text-[var(--text-main)] text-lg outline-none focus:border-[var(--secondary)] transition-all placeholder:text-purple-200;
   }
+
+  /* Skeleton Loading */
+  .skeleton {
+    @apply bg-purple-100/50 overflow-hidden relative;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: skeleton-shimmer 1.5s infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .animate-entrance {
@@ -154,14 +165,21 @@ html, body {
   to { opacity: 1; transform: translateY(0); } 
 }
 
-/* Scrollbar styling for modern browsers */
+@keyframes sparkle-float {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+  10% { opacity: 1; scale: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) rotate(180deg) scale(0); opacity: 0; }
+}
+
+.animate-sparkle {
+  animation: sparkle-float 2.5s ease-out forwards;
+}
+
+/* Scrollbar styling - hidden for "no scroll" feel */
 ::-webkit-scrollbar {
-  width: 6px;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--accent-purple);
-  border-radius: 10px;
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

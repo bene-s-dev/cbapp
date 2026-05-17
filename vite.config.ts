@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      disable: process.env.NODE_ENV === 'development', // Disable in dev
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'vorschau.png'],
       manifest: {

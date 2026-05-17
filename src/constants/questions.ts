@@ -16,4 +16,23 @@ export const FALLBACK_QUESTIONS: QuestionPool = {
   text: { q: "Was hat dich heute an mir zum Lächeln gebracht?", h: "Nimm dir einen kurzen Moment Zeit zum Nachdenken.", o: [] }
 };
 
-export const GREETINGS = ["Schön, dass du da bist, ", "Toll, dass es dich gibt, ", "Hi, ", "Ein Moment für euch, "];
+export const GREETINGS = [
+  "Schön, dass du da bist, ",
+  "Toll, dass es dich gibt, ",
+  "Einen wundervollen Tag, ",
+  "Schön, dich zu sehen, ",
+  "Lass uns den Tag gemeinsam beginnen, ",
+  "Ein Moment für euch zwei, ",
+  "Schön, dass wir uns haben, ",
+  "Ganz viel Liebe für dich, ",
+  "Heute ist ein guter Tag für uns, ",
+  "Bereit für neue gemeinsame Momente, ",
+  "Du bist wundervoll, ",
+  "Schön, dass du mein Lieblingsmensch bist, ",
+  "Lass uns heute wieder ein Stück näher rücken, ",
+  "Danke, dass du du bist, ",
+  "Ein Herzchen für dich, ",
+  "Auf einen tollen gemeinsamen Tag, ",
+  "Du machst meinen Tag besser, ",
+  "Schön, dich an meiner Seite zu wissen, "
+];

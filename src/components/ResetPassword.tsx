@@ -28,8 +28,8 @@ export default function ResetPassword({ onComplete }: { onComplete: () => void }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full px-6 animate-entrance">
-      <div className="w-20 h-20 bg-purple-50 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-sm">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full px-4 animate-entrance">
+      <div className="w-20 h-20 bg-purple-50 rounded-[2.5rem] flex items-center justify-center mb-8">
         <KeyRound className="w-10 h-10 text-[var(--secondary)]" />
       </div>
 
@@ -40,7 +40,7 @@ export default function ResetPassword({ onComplete }: { onComplete: () => void }
         </p>
       </div>
 
-      <form onSubmit={handleReset} className="w-full max-w-sm space-y-6">
+      <form onSubmit={handleReset} className="w-full max-w-md space-y-6">
         {message && (
           <div className={`p-5 rounded-[22px] text-sm font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
             message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'

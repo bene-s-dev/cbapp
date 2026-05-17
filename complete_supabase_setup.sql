@@ -42,7 +42,7 @@ ALTER TABLE public.daily_questions ENABLE ROW LEVEL SECURITY;
 -- 3. POLICIES
 -- ==========================================
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can view their partner's profile" ON public.profiles FOR SELECT USING (id IN (SELECT partner_id FROM public.profiles WHERE id = auth.uid()));
+CREATE POLICY "Users can view their partner's profile" ON public.profiles FOR SELECT USING (auth.uid() = partner_id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -96,10 +96,17 @@ serve(async (req) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-  const dayKey = new Date().toISOString().split('T')[0];
 
+  // Get dayKey from request body or fallback to current UTC date
+  let dayKey;
   try {
-    // Check existing
+    const body = await req.json();
+    dayKey = body.dayKey;
+  } catch (e) {
+    dayKey = new Date().toISOString().split('T')[0];
+  }
+
+  try {    // Check existing
     const { data: existing } = await supabase.from('daily_questions').select('questions').eq('day_key', dayKey).maybeSingle();
     if (existing) return new Response(JSON.stringify(existing), { headers: { 'Content-Type': 'application/json' } });
 

@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, FALLBACK_QUESTIONS, Question } from '../constants/questions';
-import { Users, Lock, Sparkles, AlertCircle } from 'lucide-react';
+import { Users, Lock, Sparkles, AlertCircle, Camera, Heart as HeartIcon, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getDailyKey, getTimeUntilReset } from '../lib/dateUtils';
 
 interface DashboardProps {
   userName: string;
+  userAvatar?: string;
   partnerName: string;
+  partnerAvatar?: string | null;
   onStartQuestions: () => void;
 }
 
-export default function Dashboard({ userName, partnerName, onStartQuestions }: DashboardProps) {
+export default function Dashboard({ userName, userAvatar, partnerName, partnerAvatar, onStartQuestions }: DashboardProps) {
   const [meAnswered, setMeAnswered] = useState(false);
   const [partnerAnswered, setPartnerAnswered] = useState(false);
   const [myAnswers, setMyAnswers] = useState<string[]>([]);
@@ -18,13 +21,33 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   const [dailyQs, setDailyQs] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
   const [showComparison, setShowComparison] = useState(false);
   const [hasPartner, setHasPartner] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
   const navigate = useNavigate();
-  const dayKey = new Date().toISOString().split('T')[0];
+  const dayKey = getDailyKey();
+
+  // Update countdown every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = getTimeUntilReset();
+      setCountdown({ hours: remaining.hours, minutes: remaining.minutes, seconds: remaining.seconds });
+      
+      // If we hit exactly 0 (or new day key), refresh data
+      if (remaining.totalSeconds === 0) {
+        window.location.reload();
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Daily stable greeting based on the date
+  const greeting = React.useMemo(() => {
+    const seed = new Date(dayKey).getDate() + new Date(dayKey).getMonth() + new Date(dayKey).getFullYear();
+    return GREETINGS[seed % GREETINGS.length];
+  }, [dayKey]);
 
   const loadDailyQuestions = useCallback(async () => {
     try {
@@ -43,7 +66,9 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
       } else {
         // 2. Trigger Edge Function
         setGenerating(true);
-        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-daily-questions');
+        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-daily-questions', {
+          body: { dayKey }
+        });
         
         if (!aiError && aiData?.questions) {
           const q = aiData.questions;
@@ -147,9 +172,33 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   };
 
   if (loading) return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-pulse text-[#2D264B]">
-      <div className="w-12 h-12 bg-purple-50 rounded-2xl mb-4" />
-      <p className="font-bold">Lädt...</p>
+    <div className="flex-1 flex flex-col animate-entrance">
+      {/* Header Avatars Skeleton */}
+      <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[48px]">
+        <div className="w-24 h-8 rounded-xl skeleton" />
+        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-3">
+          <div className="w-12 h-12 rounded-2xl skeleton border-2 border-[#F8F7FF]" />
+          <div className="w-12 h-12 rounded-2xl skeleton border-2 border-[#F8F7FF]" />
+        </div>
+        <div className="w-12 h-12" />
+      </div>
+
+      {/* Greeting Skeleton */}
+      <div className="mb-6 space-y-2">
+        <div className="w-32 h-7 rounded-xl skeleton" />
+        <div className="w-48 h-7 rounded-xl skeleton" />
+      </div>
+
+      {/* Status Cards Skeleton */}
+      <div className="space-y-4 mb-8">
+        <div className="h-20 rounded-[28px] skeleton" />
+        <div className="h-20 rounded-[28px] skeleton" />
+      </div>
+
+      {/* Button Skeleton */}
+      <div className="mt-auto pb-3 pt-2">
+        <div className="h-16 rounded-[22px] skeleton" />
+      </div>
     </div>
   );
 
@@ -184,7 +233,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
                     <span className="font-medium">{myAnswers[i] || '—'}</span>
                   </div>
                   <div className="res-bubble">
-                    <b>{(partnerName || 'Partner').toUpperCase()}</b>
+                    <b>{partnerName.toUpperCase()}</b>
                     <span className={`font-medium ${!partnerAnswered ? 'text-purple-200 italic' : ''}`}>
                       {partnerAnswered ? partnerAnswers?.[i] : 'Wartet...'}
                     </span>
@@ -195,7 +244,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
           </div>
         </div>
         
-        <div className="pb-32 pt-6">
+        <div className="pb-3 pt-6">
           <button onClick={deleteMyOwn} className="btn-secondary w-full text-sm">
             Antworten korrigieren 📝
           </button>
@@ -205,61 +254,112 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   }
 
   return (
-    <div className="animate-entrance flex flex-col h-full">
-      <div className="mb-10">
-        <h2 className="text-3xl font-bold text-[#2D264B] leading-tight">
-          {greeting}<br/>
-          <span className="text-[var(--secondary)]">{userName}</span>! ❤️
-        </h2>
-      </div>
-      
-      {!hasPartner ? (
-        <div className="status-box bg-purple-50/50 border-purple-100 flex flex-col items-center text-center p-8">
-          <div className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center mb-5 shadow-sm text-[var(--secondary)]">
-            <Users className="w-7 h-7" />
-          </div>
-          <p className="font-bold text-lg mb-2 text-[#2D264B]">Partner verknüpfen</p>
-          <p className="text-sm text-[var(--text)] opacity-80 mb-6 leading-relaxed">
-            Verknüpfe dich mit deinem Lieblingsmenschen, um gemeinsam in den Tag zu starten.
-          </p>
-          <button 
-            onClick={() => navigate('/profile')}
-            className="text-sm font-bold text-[var(--secondary)] underline underline-offset-4 decoration-2"
-          >
-            Jetzt Code teilen
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="status-box flex items-center justify-between p-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-3 h-3 rounded-full ${meAnswered ? 'bg-[var(--accent-green)] shadow-[0_0_10px_rgba(0,184,148,0.4)]' : 'bg-[var(--primary)] shadow-[0_0_10px_rgba(255,138,138,0.4)]'}`} />
-              <span className="font-bold">Meine Antwort</span>
-            </div>
-            <span className={`status-pill ${meAnswered ? 'pill-green' : 'pill-red'}`}>
-              {meAnswered ? 'Fertig' : 'Offen'}
-            </span>
-          </div>
+    <div className="animate-entrance flex flex-col flex-1">
+      <div className="flex-1 flex flex-col">
+        {/* Header Section with Left Branding and Centered Avatars */}
+        <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[48px]">
+          <h1 className="text-3xl font-bold text-[var(--text-main)] tracking-tight select-none" style={{ fontFamily: 'Fraunces, serif' }}>
+            Bisou
+          </h1>
           
-          <div className="status-box flex items-center justify-between p-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-3 h-3 rounded-full ${partnerAnswered ? 'bg-[var(--accent-green)] shadow-[0_0_10px_rgba(0,184,148,0.4)]' : 'bg-purple-100'}`} />
-              <span className="font-bold">{partnerName || 'Partner'}</span>
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+            <div className="flex -space-x-3">
+              <div className="w-12 h-12 rounded-2xl bg-white border-2 border-white flex items-center justify-center overflow-hidden relative z-20">
+                {userAvatar ? (
+                  <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-5 h-5 text-purple-200" />
+                )}
+              </div>
+              <div className={`w-12 h-12 rounded-2xl border-2 border-white flex items-center justify-center overflow-hidden relative z-10 ${
+                hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'
+              }`}>
+                {partnerAvatar ? (
+                  <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
+                ) : hasPartner ? (
+                  <Camera className="w-5 h-5 text-purple-200" />
+                ) : (
+                  <Users className="w-5 h-5 text-purple-200" />
+                )}
+              </div>
             </div>
-            <span className={`status-pill ${partnerAnswered ? 'pill-green' : 'bg-purple-50 text-purple-200'}`}>
-              {partnerAnswered ? 'Fertig' : 'Wartet'}
-            </span>
+            
+            {hasPartner && (
+              <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center -mt-6 -ml-2 relative z-30">
+                <HeartIcon className="w-3 h-3 text-[var(--primary)] fill-current" />
+              </div>
+            )}
           </div>
-        </div>
-      )}
 
-      {generating && (
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-[var(--secondary)] uppercase tracking-widest animate-pulse">
-          <Sparkles className="w-4 h-4" /> KI generiert neue Fragen
+          {/* Spacer to balance the layout */}
+          <div className="w-12 h-12" />
         </div>
-      )}
 
-      <div className="mt-auto pb-4">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-[#2D264B] leading-tight">
+            {greeting}<br/>
+            <span className="text-[var(--secondary)] whitespace-nowrap">{userName}</span>! ❤️
+          </h2>
+        </div>
+        
+        {!hasPartner ? (
+          <div className="status-box bg-purple-50/50 border-purple-100 flex flex-col items-center text-center p-6 mb-6">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)]">
+              <Users className="w-6 h-6" />
+            </div>
+            <p className="font-bold text-base mb-1 text-[#2D264B]">Partner verknüpfen</p>
+            <p className="text-xs text-[var(--text)] opacity-80 mb-4 leading-relaxed px-2">
+              Verknüpfe dich mit deinem Lieblingsmenschen, um gemeinsam in den Tag zu starten.
+            </p>
+            <button 
+              onClick={() => navigate('/profile')}
+              className="text-xs font-bold text-[var(--secondary)] underline underline-offset-4 decoration-2"
+            >
+              Jetzt Code teilen
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-6">
+            <div className="status-box flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-2.5 h-2.5 rounded-full ${meAnswered ? 'bg-[var(--accent-green)]' : 'bg-[var(--primary)]'}`} />
+                <span className="font-bold text-sm">Meine Antwort</span>
+              </div>
+              <span className={`status-pill scale-90 ${meAnswered ? 'pill-green' : 'pill-red'}`}>
+                {meAnswered ? 'Fertig' : 'Offen'}
+              </span>
+            </div>
+            
+            <div className="status-box flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-2.5 h-2.5 rounded-full ${partnerAnswered ? 'bg-[var(--accent-green)]' : 'bg-purple-100'}`} />
+                <span className="font-bold whitespace-nowrap text-sm">{partnerName}</span>
+              </div>
+              <span className={`status-pill scale-90 ${partnerAnswered ? 'pill-green' : 'bg-purple-50 text-purple-200'}`}>
+                {partnerAnswered ? 'Fertig' : 'Wartet'}
+              </span>
+            </div>
+
+            <div className="status-box flex items-center justify-between p-4 bg-purple-50/30 border-dashed border-purple-100">
+              <div className="flex items-center gap-3">
+                <Clock className="w-4 h-4 text-[var(--muted)]" />
+                <span className="font-bold text-[10px] text-[var(--muted)] uppercase tracking-wider">Nächste Fragen in</span>
+              </div>
+              <span className="font-mono font-bold text-sm text-[var(--secondary)]">
+                {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {generating && (
+          <div className="mb-6 flex items-center justify-center gap-2 text-[10px] font-bold text-[var(--secondary)] uppercase tracking-widest animate-pulse">
+            <Sparkles className="w-3.5 h-3.5" /> KI generiert neue Fragen
+          </div>
+        )}
+      </div>
+
+      <div className="pb-3 pt-2 bg-gradient-to-t from-[#F8F7FF] via-[#F8F7FF] to-transparent sticky bottom-0">
         {hasPartner ? (
           <button 
             onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
@@ -270,8 +370,8 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
           </button>
         ) : (
           <button 
-            disabled
-            className="btn-action opacity-50 cursor-not-allowed"
+            onClick={onStartQuestions}
+            className="btn-action"
           >
             <Lock className="w-4 h-4" /> Start gesperrt
           </button>
