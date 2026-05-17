@@ -128,7 +128,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           </div>
         )}
         
-        <div className="w-full">
+        <div className="w-full pt-8">
           {message && (
             <div className={`p-4 rounded-[22px] text-sm font-bold mb-6 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
               message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
@@ -237,7 +237,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         </div>
 
         {/* Footer */}
-        <footer className="mt-auto pt-12 pb-2 text-center">
+        <footer className="mt-auto pt-12 pb-12 text-center">
           <p className="text-[10px] font-bold text-[var(--muted)] opacity-50">
             Bisou-App v.01<br />
             <a 
@@ -247,7 +247,8 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
               className="underline hover:text-[var(--secondary)] transition-colors"
             >
               Benedikt S.
-            </a> &copy; 2026          </p>
+            </a> &copy; 2026
+          </p>
           <div className="flex justify-center gap-4 mt-2">
             <button 
               onClick={() => setShowPrivacyModal(true)}
@@ -273,7 +274,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <ShieldCheck className="w-8 h-8 text-[var(--secondary)]" />
             </div>
-            <h3 className="text-xl font-bold text-[#2D264B] mb-4">Datenschutz</h3>
+            <h3 className="text-xl font-bold text-[#1F1939] mb-4">Datenschutz</h3>
             <p className="text-sm text-[#4A4468] leading-relaxed mb-8">
               Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.<br /><br />
               <i className="opacity-80">Dein Bene</i>
@@ -296,7 +297,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <span className="text-3xl font-bold text-[var(--secondary)]">§</span>
             </div>
-            <h3 className="text-xl font-bold text-[#2D264B] mb-4">Impressum</h3>
+            <h3 className="text-xl font-bold text-[#1F1939] mb-4">Impressum</h3>
             <p className="text-sm text-[#4A4468] leading-relaxed mb-8 font-medium">
               Made with ❤️ in Freiburg
             </p>

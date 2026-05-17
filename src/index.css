@@ -10,13 +10,13 @@
 :root {
   --bg-light: #FDFBFF;
   --accent-purple: #DCD7FE;
-  --text-main: #2D264B;
+  --text-main: #1F1939;
   --primary: #FF8A8A; 
   --secondary: #A29BFE; 
   --bg: #F8F7FF; 
   --card: #FFFFFF; 
-  --text: #4A4468; 
-  --muted: #8E89AA; 
+  --text: #3A3555; 
+  --muted: #6A6588; 
   --accent-green: #00B894; 
   --light-bg: #FFFFFF;
   
@@ -82,13 +82,13 @@ html {
   .btn-action:disabled { @apply bg-[#dfe6e9] text-[#b2bec3] cursor-not-allowed opacity-50; }
   .btn-action:active:not(:disabled) { @apply scale-95; }
 
-  .status-box { @apply bg-white rounded-[28px] p-6 border border-purple-50; }
+  .status-box { @apply bg-white rounded-[28px] p-6 border-2 border-purple-100/50; }
   .status-pill { @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider; }
   .pill-green { @apply bg-green-50 text-[var(--accent-green)]; }
   .pill-red { @apply bg-red-50 text-[var(--primary)]; }
 
   .info-hint {
-    @apply bg-purple-50 text-[var(--secondary)] px-5 py-4 rounded-[22px] text-sm flex items-start gap-3 font-medium border border-purple-100/50;
+    @apply bg-purple-50 text-[var(--secondary)] px-5 py-4 rounded-[22px] text-sm flex items-start gap-3 font-medium border-2 border-purple-100/50;
     animation: fadeIn 0.4s ease-out;
   }
 
@@ -98,22 +98,22 @@ html {
   .dot.done { @apply bg-[var(--accent-green)]; }
 
   .rank-card { 
-    @apply bg-white border-2 border-purple-50 p-5 rounded-[22px] flex items-center gap-4 cursor-grab touch-none transition-all duration-200 select-none;
+    @apply bg-white border-2 border-purple-100/50 p-5 rounded-[22px] flex items-center gap-4 cursor-grab touch-none transition-all duration-200 select-none;
   }
   .rank-tag { @apply bg-[var(--secondary)] text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0; }
   .sortable-ghost { @apply opacity-40 bg-purple-50 border-2 border-dashed border-[var(--secondary)]; }
   
   .tot-grid { @apply grid grid-cols-2 gap-4 w-full; }
-  .tot-box { @apply bg-white border-2 border-purple-50 rounded-[28px] py-8 px-4 text-center font-bold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300; }
+  .tot-box { @apply bg-white border-2 border-purple-100/50 rounded-[28px] py-8 px-4 text-center font-bold min-h-[110px] flex items-center justify-center cursor-pointer transition-all duration-300; }
   .tot-box.selected { @apply bg-[var(--primary)] text-white border-[var(--primary)] -translate-y-1; }
 
-  .textarea-custom { @apply w-full h-32 rounded-[28px] border-2 border-purple-50 p-6 text-lg outline-none bg-white resize-none transition-all focus:border-[var(--secondary)]; }
+  .textarea-custom { @apply w-full h-32 rounded-[28px] border-2 border-purple-100/50 p-6 text-lg outline-none bg-white resize-none transition-all focus:border-[var(--secondary)]; }
 
-  .res-bubble { @apply p-5 rounded-[22px] text-sm border border-purple-50 bg-white flex flex-col gap-1; }
+  .res-bubble { @apply p-5 rounded-[22px] text-sm border-2 border-purple-100/50 bg-white flex flex-col gap-1; }
   .res-bubble b { @apply text-[10px] text-[var(--muted)] uppercase tracking-widest; }
 
   .glass-card {
-    @apply bg-white/80 backdrop-blur-xl border border-purple-100/50 rounded-[2.5rem];
+    @apply bg-white backdrop-blur-xl border-2 border-purple-100 rounded-[2.5rem];
   }
 
   .nav-dock {

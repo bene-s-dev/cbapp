@@ -225,9 +225,9 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         </div>
       </div>
 
-      <div className="pb-3 pt-2 bg-gradient-to-t from-[#F8F7FF] via-[#F8F7FF] to-transparent sticky bottom-0">
+      <div className="pb-3 pt-2 bg-[#F8F7FF]">
         <button 
-          onClick={handleNext}
+          onClick={handleNext} 
           disabled={!canContinue || isSubmitting}
           className="btn-action"
         >
@@ -237,7 +237,6 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
             <span className="flex items-center gap-2">Weiter <ChevronRight className="w-5 h-5" /></span>
           ))}
         </button>
-      </div>
-    </div>
+      </div>    </div>
   );
 }

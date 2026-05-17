@@ -178,7 +178,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-[#2D264B]">Hi {userName}! ❤️</h2>
+              <h2 className="text-2xl font-bold text-[#1F1939]">Hi {userName}! ❤️</h2>
               <p className="text-[var(--text)] text-[10px] leading-relaxed opacity-70">
                 Lass uns dein Profil vervollständigen.<br/>Möchtest du ein Foto hochladen?
               </p>
@@ -193,7 +193,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             </div>
             
             <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-[#2D264B]">Partner verknüpfen</h2>
+              <h2 className="text-2xl font-bold text-[#1F1939]">Partner verknüpfen</h2>
               <div className="space-y-2 text-left">
                 <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest px-1">Dein Code zum Teilen:</p>
                 <div className="flex items-center justify-between bg-white p-4 rounded-xl border-2 border-dashed border-purple-100">

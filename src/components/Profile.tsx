@@ -14,6 +14,8 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -45,9 +47,15 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   useEffect(() => {
     fetchProfile();
 
-    // iOS Detection
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    // Enhanced Device & State Detection
+    const ua = navigator.userAgent;
+    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const android = /Android/.test(ua);
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    
     setIsIOS(ios);
+    setIsAndroid(android);
+    setIsStandalone(standalone);
 
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -231,7 +239,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
                   type="text" 
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="text-xl font-bold text-[#2D264B] bg-purple-50 border-b-2 border-[var(--secondary)] outline-none text-center py-1 w-full max-w-[200px]"
+                  className="text-xl font-bold text-[#1F1939] bg-purple-50 border-b-2 border-[var(--secondary)] outline-none text-center py-1 w-full max-w-[200px]"
                   autoFocus
                   onBlur={handleUpdateName}
                   onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()}
@@ -242,7 +250,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
-                <h2 className="text-2xl font-bold text-[#2D264B] leading-tight">{profile?.display_name || 'User'}</h2>
+                <h2 className="text-2xl font-bold text-[#1F1939] leading-tight">{profile?.display_name || 'User'}</h2>
                 <Pencil className="w-4 h-4 text-purple-200 group-hover:text-[var(--secondary)] transition-colors" />
               </div>
             )}
@@ -302,9 +310,9 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
           </div>
 
           <div className={`p-4 rounded-[22px] relative overflow-hidden transition-all ${
-            (deferredPrompt || isIOS) 
+            (deferredPrompt || isIOS || isAndroid) && !isStandalone
               ? 'bg-gradient-to-br from-[var(--secondary)] to-indigo-500 text-white' 
-              : 'bg-gray-100 text-gray-400 opacity-60 grayscale cursor-not-allowed'
+              : 'bg-gray-100 text-gray-400 opacity-60 grayscale'
           }`}>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-1.5">
@@ -312,20 +320,34 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
                 <h3 className="font-bold text-xs">App installieren ✨</h3>
               </div>
               
-              {isIOS ? (
+              {isStandalone ? (
+                <div className="flex items-center gap-2 text-[9px] font-bold text-green-600 bg-green-50/50 px-2 py-1 rounded-lg w-fit mt-1">
+                  <Check className="w-3 h-3" /> Installiert
+                </div>
+              ) : isIOS ? (
                 <button 
                   onClick={() => setShowIOSModal(true)}
-                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1"
+                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1 active:scale-95 transition-all"
                 >
                   Installieren
                 </button>
               ) : deferredPrompt ? (
                 <button 
                   onClick={handleInstallClick}
-                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1"
+                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1 active:scale-95 transition-all"
                 >
                   Installieren
                 </button>
+              ) : isAndroid ? (
+                <div className="space-y-1">
+                  <p className="text-[8px] leading-tight opacity-90 mb-1">Automatische Installation nicht bereit.</p>
+                  <button 
+                    onClick={() => alert("Tippe oben rechts im Chrome-Menü (⋮) auf 'App installieren'.")}
+                    className="bg-white/20 text-white border border-white/30 px-3 py-1 rounded-xl font-bold text-[9px] active:scale-95 transition-all"
+                  >
+                    Anleitung
+                  </button>
+                </div>
               ) : (
                 <p className="text-[9px] leading-tight">
                   Nur auf Mobilgeräten verfügbar.
@@ -333,7 +355,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
               )}
             </div>
             <div className={`absolute top-0 right-0 -mr-4 -mt-4 w-16 h-16 rounded-full blur-2xl ${
-              (deferredPrompt || isIOS) ? 'bg-white/10' : 'bg-gray-200/20'
+              (deferredPrompt || isIOS || isAndroid) && !isStandalone ? 'bg-white/10' : 'bg-gray-200/20'
             }`} />
           </div>
         </div>
@@ -346,7 +368,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
               <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Download className="w-8 h-8 text-[var(--secondary)]" />
               </div>
-              <h3 className="text-xl font-bold text-center text-[#2D264B] mb-4">Auf iPhone installieren</h3>
+              <h3 className="text-xl font-bold text-center text-[#1F1939] mb-4">Auf iPhone installieren</h3>
               <div className="space-y-6 mb-8">
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center font-bold text-[var(--secondary)] text-sm shrink-0">1</div>

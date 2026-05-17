@@ -221,7 +221,7 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
             ← Zurück
           </button>
           
-          <h2 className="text-3xl font-bold mb-8 text-[#2D264B]">Unsere Gedanken</h2>
+          <h2 className="text-3xl font-bold mb-8 text-[#1F1939]">Unsere Gedanken</h2>
           
           <div className="space-y-8">
             {dailyQs.map((q, i) => (
@@ -296,26 +296,26 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-[#2D264B] leading-tight">
+          <h2 className="text-2xl font-bold text-[#1F1939] leading-tight">
             {greeting}<br/>
             <span className="text-[var(--secondary)] whitespace-nowrap">{userName}</span>! ❤️
           </h2>
         </div>
         
         {!hasPartner ? (
-          <div className="status-box bg-purple-50/50 border-purple-100 flex flex-col items-center text-center p-6 mb-6">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)]">
-              <Users className="w-6 h-6" />
+          <div className="status-box bg-white border-purple-100 flex flex-col items-center text-center p-8 mb-6">
+            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)]">
+              <Users className="w-7 h-7" />
             </div>
-            <p className="font-bold text-base mb-1 text-[#2D264B]">Partner verknüpfen</p>
-            <p className="text-xs text-[var(--text)] opacity-80 mb-4 leading-relaxed px-2">
+            <p className="font-bold text-lg mb-2 text-[#1F1939]">Partner verknüpfen</p>
+            <p className="text-sm text-[var(--text)] opacity-90 mb-6 leading-relaxed px-2">
               Verknüpfe dich mit deinem Lieblingsmenschen, um gemeinsam in den Tag zu starten.
             </p>
             <button 
               onClick={() => navigate('/profile')}
-              className="text-xs font-bold text-[var(--secondary)] underline underline-offset-4 decoration-2"
+              className="btn-secondary py-3 px-6 text-sm"
             >
-              Jetzt Code teilen
+              Jetzt Code teilen ✨
             </button>
           </div>
         ) : (
@@ -359,7 +359,7 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
         )}
       </div>
 
-      <div className="pb-3 pt-2 bg-gradient-to-t from-[#F8F7FF] via-[#F8F7FF] to-transparent sticky bottom-0">
+      <div className="pb-3 pt-2 bg-[#F8F7FF]">
         {hasPartner ? (
           <button 
             onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 

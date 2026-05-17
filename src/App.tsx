@@ -33,8 +33,11 @@ export default function App() {
       return;
     }
     
-    console.log("🔍 Fetching profile for:", userId);
-    setLoading(true);
+    // If we already have this profile, don't trigger the full loading screen
+    const isInitialLoad = !profile || profile.id !== userId;
+    
+    console.log("🔍 Fetching profile for:", userId, isInitialLoad ? "(Initial)" : "(Refresh)");
+    if (isInitialLoad) setLoading(true);
     setErrorDetails(null);
     
     try {
@@ -126,12 +129,8 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-    let isInitializing = false;
 
     const initAuth = async () => {
-      if (isInitializing) return;
-      isInitializing = true;
-
       // Safety timeout: if auth takes more than 7s, something is wrong
       const timeoutId = setTimeout(() => {
         if (mounted && loading) {
@@ -167,8 +166,6 @@ export default function App() {
         clearTimeout(timeoutId);
         console.error("Auth init error:", err);
         if (mounted) setLoading(false);
-      } finally {
-        isInitializing = false;
       }
     };
 
@@ -186,9 +183,8 @@ export default function App() {
       }
 
       if (event === 'SIGNED_IN') {
-        // Only fetch profile if session changed or we don't have a profile yet
         setSession(currentSession);
-        if (currentSession && (!profile || profile.id !== currentSession.user.id)) {
+        if (currentSession) {
           await fetchProfile(currentSession.user.id);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -198,7 +194,10 @@ export default function App() {
         setDynamicPartnerAvatar(null);
         setErrorDetails(null);
         setLoading(false);
-        if (!['/signin', '/signup', '/reset-password'].includes(location.pathname)) {
+        // Use window.location instead of navigate for a clean state reset on sign out
+        if (!window.location.pathname.includes('signin') && 
+            !window.location.pathname.includes('signup') && 
+            !window.location.pathname.includes('reset-password')) {
           navigate('/signin');
         }
       } else if (event === 'TOKEN_REFRESHED') {
@@ -210,7 +209,7 @@ export default function App() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile, navigate, location.pathname, profile?.id]);
+  }, [fetchProfile]); // Only depend on fetchProfile, which is wrapped in useCallback
 
 
   const handleOnboardingComplete = async () => {
@@ -237,7 +236,7 @@ export default function App() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (loading) {
-      timer = setTimeout(() => setLongLoading(true), 2000);
+      timer = setTimeout(() => setLongLoading(true), 3500);
     } else {
       setLongLoading(false);
     }
@@ -270,7 +269,7 @@ export default function App() {
   // Show global error screen if config or auth failed critically
   if (errorDetails && !profile) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#2D264B] gap-4 bg-[#F8F7FF] px-4 text-center">
+      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#1F1939] gap-4 bg-[#F8F7FF] px-4 text-center">
         <div className="bg-aura" />
         <p className="font-bold text-lg relative z-10">
           {errorDetails.includes(".env") ? "Konfigurationsfehler" : "Verbindungsproblem"}
@@ -297,7 +296,7 @@ export default function App() {
 
   const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
     if (!profile) return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#2D264B] gap-4 bg-[#F8F7FF] px-4 text-center">
+      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#1F1939] gap-4 bg-[#F8F7FF] px-4 text-center">
         <p className="font-bold text-lg">
           {errorDetails?.includes(".env") ? "Konfigurationsfehler" : "Profil konnte nicht geladen werden."}
         </p>
@@ -330,7 +329,7 @@ export default function App() {
     }
 
     return (
-      <div className="h-screen w-screen overflow-hidden relative text-[#2D264B] select-none bg-[#F8F7FF] flex flex-col">
+      <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
         <div className="bg-aura" />
         
         <main className="flex-1 flex flex-col relative z-10 px-4 pb-28 pt-4 max-w-md mx-auto w-full overflow-y-auto">
@@ -375,7 +374,7 @@ export default function App() {
               <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Lock className="w-8 h-8 text-[var(--primary)]" />
               </div>
-              <h3 className="text-xl font-bold text-center text-[#2D264B] mb-4">Bereich gesperrt</h3>
+              <h3 className="text-xl font-bold text-center text-[#1F1939] mb-4">Bereich gesperrt</h3>
               <p className="text-center text-[#4A4468] leading-relaxed mb-8">
                 Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
               </p>
@@ -390,7 +389,7 @@ export default function App() {
               </button>
               <button 
                 onClick={() => setShowLockedModal(false)}
-                className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#2D264B] transition-colors"
+                className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors"
               >
                 Schließen
               </button>
