@@ -46,40 +46,15 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     setIsLinking(true);
 
     try {
-      const { data: partnerProfile, error: findError } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .eq('partner_code', partnerCodeInput.trim().toUpperCase())
-        .single();
+      const { error } = await supabase.rpc('link_partners', { 
+        partner_code_to_link: partnerCodeInput.trim().toUpperCase() 
+      });
 
-      if (findError || !partnerProfile) {
-        alert("Code nicht gefunden! ❌");
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      if (partnerProfile.id === session.user.id) {
-        alert("Du kannst dich nicht mit dir selbst verknüpfen! ✨");
-        return;
-      }
-
-      const { error: updateMeError } = await supabase
-        .from('profiles')
-        .update({ partner_id: partnerProfile.id })
-        .eq('id', session.user.id);
-
-      const { error: updatePartnerError } = await supabase
-        .from('profiles')
-        .update({ partner_id: session.user.id })
-        .eq('id', partnerProfile.id);
-
-      if (updateMeError || updatePartnerError) throw new Error("Verknüpfung fehlgeschlagen.");
+      if (error) throw error;
 
       onComplete();
     } catch (err: any) {
-      alert("Fehler: " + err.message);
+      alert("Fehler: " + (err.message || "Verknüpfung fehlgeschlagen."));
     } finally {
       setIsLinking(false);
     }

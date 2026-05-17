@@ -97,9 +97,8 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     if (!window.confirm("Möchtest du die Verknüpfung mit deinem Partner wirklich aufheben?")) return;
     setIsLinking(true);
     try {
-      const partnerId = profile.partner_id;
-      await supabase.from('profiles').update({ partner_id: null }).eq('id', profile.id);
-      await supabase.from('profiles').update({ partner_id: null }).eq('id', partnerId);
+      const { error } = await supabase.rpc('unlink_partners');
+      if (error) throw error;
       window.location.reload();
     } catch (err) {
       alert("Fehler!");
@@ -112,17 +111,13 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     if (!partnerCodeInput) return;
     setIsLinking(true);
     try {
-      const { data: partnerP, error: findError } = await supabase.from('profiles').select('id').eq('partner_code', partnerCodeInput.trim().toUpperCase()).single();
-      if (findError || !partnerP) {
-        alert("Code nicht gefunden!");
+      const { error } = await supabase.rpc('link_partners', { 
+        partner_code_to_link: partnerCodeInput.trim().toUpperCase() 
+      });
+      if (error) {
+        alert(error.message || "Code nicht gefunden!");
         return;
       }
-      if (partnerP.id === profile.id) {
-        alert("Du kannst dich nicht mit dir selbst verknüpfen! ✨");
-        return;
-      }
-      await supabase.from('profiles').update({ partner_id: partnerP.id }).eq('id', profile.id);
-      await supabase.from('profiles').update({ partner_id: profile.id }).eq('id', partnerP.id);
       window.location.reload();
     } catch (err: any) {
       alert("Fehler!");

@@ -41,21 +41,95 @@ ALTER TABLE public.daily_questions ENABLE ROW LEVEL SECURITY;
 -- ==========================================
 -- 3. POLICIES
 -- ==========================================
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can view their partner's profile" ON public.profiles FOR SELECT USING (auth.uid() = partner_id);
+DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view their partner's profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+
+CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can view their own answers" ON public.answers;
+DROP POLICY IF EXISTS "Users can view their partner's answers" ON public.answers;
+DROP POLICY IF EXISTS "Users can insert their own answers" ON public.answers;
+DROP POLICY IF EXISTS "Users can delete their own answers" ON public.answers;
 
 CREATE POLICY "Users can view their own answers" ON public.answers FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can view their partner's answers" ON public.answers FOR SELECT USING (user_id IN (SELECT partner_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Users can insert their own answers" ON public.answers FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own answers" ON public.answers FOR DELETE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Allow authenticated users to read daily questions" ON public.daily_questions;
 CREATE POLICY "Allow authenticated users to read daily questions" ON public.daily_questions FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ==========================================
--- 4. STORAGE (AVATARS)
+-- 4. RPC FUNCTIONS
 -- ==========================================
+
+-- Function to link partners atomically
+CREATE OR REPLACE FUNCTION public.link_partners(partner_code_to_link TEXT)
+RETURNS VOID AS $$
+DECLARE
+    partner_id_found UUID;
+BEGIN
+    -- 1. Find the partner
+    SELECT id INTO partner_id_found
+    FROM public.profiles
+    WHERE partner_code = upper(trim(partner_code_to_link));
+
+    IF partner_id_found IS NULL THEN
+        RAISE EXCEPTION 'Code nicht gefunden!';
+    END IF;
+
+    IF partner_id_found = auth.uid() THEN
+        RAISE EXCEPTION 'Du kannst dich nicht mit dir selbst verknüpfen!';
+    END IF;
+
+    -- 2. Update both profiles
+    UPDATE public.profiles
+    SET partner_id = partner_id_found
+    WHERE id = auth.uid();
+
+    UPDATE public.profiles
+    SET partner_id = auth.uid()
+    WHERE id = partner_id_found;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to unlink partners atomically
+CREATE OR REPLACE FUNCTION public.unlink_partners()
+RETURNS VOID AS $$
+DECLARE
+    current_partner_id UUID;
+BEGIN
+    -- 1. Get current partner
+    SELECT partner_id INTO current_partner_id
+    FROM public.profiles
+    WHERE id = auth.uid();
+
+    IF current_partner_id IS NOT NULL THEN
+        -- 2. Set both to NULL
+        UPDATE public.profiles
+        SET partner_id = NULL
+        WHERE id = auth.uid();
+
+        UPDATE public.profiles
+        SET partner_id = NULL
+        WHERE id = current_partner_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================
+-- 5. STORAGE (AVATARS)
+-- ==========================================
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING ( bucket_id = 'avatars' );
 CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
 CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
