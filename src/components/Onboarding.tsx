@@ -33,7 +33,6 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   };
 
   const handleLinkPartner = async () => {
-... (rest of methods unchanged)
     setLoading(true);
 
     try {
@@ -209,7 +208,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
           </button>
         ) : (
           <button onClick={handleLinkPartner} disabled={loading || !partnerCodeInput} className="btn-action flex items-center justify-center gap-2">
-            {loading ? 'Verknüpfbe...' : 'Verknüpfen & Starten ❤️'}
+            {loading ? 'Verknüpfe...' : 'Verknüpfen & Starten ❤️'}
           </button>
         )}
         
