@@ -12,8 +12,83 @@ import Questions from './components/Questions';
 import Profile from './components/Profile';
 import ResetPassword from './components/ResetPassword';
 import LoadingSkeleton from './components/LoadingSkeleton';
-import { GREETINGS } from './constants/questions';
-import { getDailyKey } from './lib/dateUtils';
+
+// Separate Layout component to prevent remounting on navigation
+function AppLayout({ 
+  children, 
+  profile, 
+  showLockedModal,
+  setShowLockedModal 
+}: { 
+  children: React.ReactNode; 
+  profile: any; 
+  showLockedModal: boolean;
+  setShowLockedModal: (val: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  if (!profile.onboarding_completed && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return (
+    <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+      <div className="bg-aura" />
+      
+      <main className="flex-1 flex flex-col relative z-10 px-4 pb-48 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+        {children}
+      </main>
+
+      {profile.onboarding_completed && (
+        <nav className="nav-dock max-w-md mx-auto">
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+            <Home className="w-6 h-6" />
+          </NavLink>
+
+          <div className="relative">
+            {profile.partner_id ? (
+              <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+                <MessageCircle className="w-6 h-6" />
+              </NavLink>
+            ) : (
+              <div 
+                onClick={() => setShowLockedModal(true)}
+                className="nav-item opacity-40 cursor-pointer relative"
+              >
+                <MessageCircle className="w-6 h-6" />
+                <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5">
+                  <Lock className="w-2.5 h-2.5 text-[var(--primary)]" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+            <UserIcon className="w-6 h-6" />
+          </NavLink>
+        </nav>
+      )}
+
+      {showLockedModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowLockedModal(false)} />
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+              <Lock className="w-8 h-8 text-[var(--primary)]" />
+            </div>
+            <h3 className="text-xl font-bold text-[#1F1939] mb-4">Bereich gesperrt</h3>
+            <p className="text-sm text-[#4A4468] leading-relaxed mb-8">
+              Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
+            </p>
+            <button onClick={() => { setShowLockedModal(false); navigate('/profile'); }} className="btn-action">Zum Profil ✨</button>
+            <button onClick={() => setShowLockedModal(false)} className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors">Schließen</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -21,11 +96,9 @@ export default function App() {
   const [profile, setProfile] = useState<any>(null);
   const [dynamicPartnerName, setDynamicPartnerName] = useState<string | null>(null);
   const [dynamicPartnerAvatar, setDynamicPartnerAvatar] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [showLockedModal, setShowLockedModal] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   const fetchProfile = useCallback(async (userId: string, forceLoading = false) => {
     if (!userId) {
@@ -34,9 +107,7 @@ export default function App() {
     }
     
     if (forceLoading) setLoading(true);
-    setErrorDetails(null);
     
-    // Attempt with retry logic for mobile resilience
     const maxRetries = 2;
     let attempt = 0;
     
@@ -51,7 +122,6 @@ export default function App() {
         if (error) throw error;
 
         if (!data) {
-          // Self-healing logic for missing profiles
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const newProfile = {
@@ -74,40 +144,30 @@ export default function App() {
             }
           }
         }
-        
-        setErrorDetails(null);
         setLoading(false);
-        return; // Success
+        return; 
       } catch (e: any) {
         attempt++;
-        console.warn(`⚠️ Fetch attempt ${attempt} failed:`, e.message);
         if (attempt > maxRetries) {
-          setErrorDetails("Verbindung fehlgeschlagen. Bitte prüfe dein Internet.");
           setLoading(false);
         } else {
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
     }
-  }, []); // Empty dependency array to break the infinite loop
+  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    // Handle mobile background/foreground transition
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && session?.user?.id) {
-        console.log("📱 App back in foreground, refreshing session...");
-        fetchProfile(session.user.id);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     const initAuth = async () => {
+      const safetyTimeout = setTimeout(() => {
+        if (mounted && loading) setLoading(false);
+      }, 2500);
+
       try {
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        clearTimeout(safetyTimeout);
 
         if (mounted) {
           if (initialSession) {
@@ -118,7 +178,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.error("Auth init error:", err);
+        clearTimeout(safetyTimeout);
         if (mounted) setLoading(false);
       }
     };
@@ -130,9 +190,7 @@ export default function App() {
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setSession(currentSession);
-        if (currentSession) {
-          await fetchProfile(currentSession.user.id);
-        }
+        if (currentSession) await fetchProfile(currentSession.user.id);
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setProfile(null);
@@ -146,195 +204,46 @@ export default function App() {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchProfile, navigate, session?.user?.id]); 
-
-
+  }, [fetchProfile, navigate]); 
 
   const handleOnboardingComplete = async () => {
     if (session) {
       setLoading(true); 
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ onboarding_completed: true })
-          .eq('id', session.user.id);
-        
-        if (error) throw error;
+        await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', session.user.id);
         await fetchProfile(session.user.id);
         navigate('/dashboard');
       } catch (e) {
-        console.error("Error completing onboarding:", e);
         setLoading(false);
       }
     }
   };
 
-  if (loading && !profile) {
-    return <LoadingSkeleton />;
-  }
+  if (loading && !profile) return <LoadingSkeleton />;
 
   return (
     <Routes>
-      <Route path="/signin" element={
-        session ? <Navigate to="/" replace /> : (
-          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4">
-            <div className="bg-aura" />
-            <Login onLogin={() => {}} initialMode="login" />
-          </div>
-        )
-      } />
-      <Route path="/signup" element={
-        session ? <Navigate to="/" replace /> : (
-          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4">
-            <div className="bg-aura" />
-            <Login onLogin={() => {}} initialMode="register" />
-          </div>
-        )
-      } />
-      <Route path="/reset-password" element={
-        <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-4">
-          <div className="bg-aura" />
-          <ResetPassword onComplete={() => navigate('/signin')} />
-        </div>
-      } />
+      <Route path="/signin" element={session ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => {}} initialMode="login" /></div>} />
+      <Route path="/signup" element={session ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => {}} initialMode="register" /></div>} />
+      <Route path="/reset-password" element={<div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-4"><div className="bg-aura" /><ResetPassword onComplete={() => navigate('/signin')} /></div>} />
       
-      {/* Protected Routes */}
-      <Route path="/onboarding" element={
-        session ? (
-          profile ? (
-            profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : (
-              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
-                <div className="bg-aura" />
-                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
-                  <Onboarding onComplete={handleOnboardingComplete} />
-                </main>
-              </div>
-            )
-          ) : <LoadingSkeleton />
-        ) : <Navigate to="/signin" replace />
-      } />
-      
-      <Route path="/dashboard" element={
-        session ? (
-          profile ? (
-            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
-              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
-                <div className="bg-aura" />
-                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
-                  <Dashboard 
-                    userName={profile.display_name} 
-                    userAvatar={profile.avatar_url}
-                    partnerName={dynamicPartnerName || 'Partner'} 
-                    partnerAvatar={dynamicPartnerAvatar}
-                    onStartQuestions={async () => {
-                      const { data } = await supabase.from('profiles').select('partner_id').eq('id', session.user.id).maybeSingle();
-                      if (!data?.partner_id) setShowLockedModal(true);
-                      else navigate('/questions');
-                    }} 
-                  />
-                </main>
-                <nav className="nav-dock max-w-md mx-auto">
-                  <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
-                  <div className="relative">
-                    {profile.partner_id ? (
-                      <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
-                    ) : (
-                      <div onClick={() => setShowLockedModal(true)} className="nav-item opacity-40 cursor-pointer relative">
-                        <MessageCircle className="w-6 h-6" />
-                        <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5"><Lock className="w-2.5 h-2.5 text-[var(--primary)]" /></div>
-                      </div>
-                    )}
-                  </div>
-                  <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
-                </nav>
-                {showLockedModal && <LockedModal onClose={() => setShowLockedModal(false)} onToProfile={() => { setShowLockedModal(false); navigate('/profile'); }} />}
-              </div>
-            )
-          ) : <LoadingSkeleton />
-        ) : <Navigate to="/signin" replace />
-      } />
-
-      <Route path="/questions" element={
-        session ? (
-          profile ? (
-            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
-              !profile.partner_id ? <Navigate to="/dashboard" replace /> : (
-                <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
-                  <div className="bg-aura" />
-                  <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
-                    <Questions userName={profile.display_name} onComplete={() => navigate('/dashboard')} />
-                  </main>
-                  <nav className="nav-dock max-w-md mx-auto">
-                    <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
-                    <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
-                  </nav>
-                </div>
-              )
-            )
-          ) : <LoadingSkeleton />
-        ) : <Navigate to="/signin" replace />
-      } />
-
-      <Route path="/profile" element={
-        session ? (
-          profile ? (
-            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
-              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
-                <div className="bg-aura" />
-                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
-                  <Profile partnerName={dynamicPartnerName} onLogout={() => supabase.auth.signOut()} />
-                </main>
-                <nav className="nav-dock max-w-md mx-auto">
-                  <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
-                  <div className="relative">
-                    {profile.partner_id ? (
-                      <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
-                    ) : (
-                      <div onClick={() => setShowLockedModal(true)} className="nav-item opacity-40 cursor-pointer relative">
-                        <MessageCircle className="w-6 h-6" />
-                        <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5"><Lock className="w-2.5 h-2.5 text-[var(--primary)]" /></div>
-                      </div>
-                    )}
-                  </div>
-                  <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
-                </nav>
-                {showLockedModal && <LockedModal onClose={() => setShowLockedModal(false)} onToProfile={() => { setShowLockedModal(false); navigate('/profile'); }} />}
-              </div>
-            )
-          ) : <LoadingSkeleton />
-        ) : <Navigate to="/signin" replace />
-      } />
-
-      <Route path="/" element={
-        session ? (
-          profile?.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />
-        ) : <Navigate to="/signin" replace />
-      } />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Protected Area */}
+      {session && profile ? (
+        <Route path="*" element={
+          <AppLayout profile={profile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
+            <Routes>
+              <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
+              <Route path="/dashboard" element={<Dashboard userName={profile.display_name} userAvatar={profile.avatar_url} partnerName={dynamicPartnerName || 'Partner'} partnerAvatar={dynamicPartnerAvatar} onStartQuestions={async () => { const { data } = await supabase.from('profiles').select('partner_id').eq('id', session.user.id).maybeSingle(); if (!data?.partner_id) setShowLockedModal(true); else navigate('/questions'); }} />} />
+              <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} onComplete={() => navigate('/dashboard')} /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/profile" element={<Profile partnerName={dynamicPartnerName} onLogout={() => supabase.auth.signOut()} />} />
+              <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
+            </Routes>
+          </AppLayout>
+        } />
+      ) : (
+        <Route path="*" element={<Navigate to="/signin" replace />} />
+      )}
     </Routes>
-  );
-}
-
-// Sub-component for the locked modal to keep Routes clean
-function LockedModal({ onClose, onToProfile }: { onClose: () => void; onToProfile: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100">
-        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-          <Lock className="w-8 h-8 text-[var(--primary)]" />
-        </div>
-        <h3 className="text-xl font-bold text-center text-[#1F1939] mb-4">Bereich gesperrt</h3>
-        <p className="text-center text-[#4A4468] leading-relaxed mb-8">
-          Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
-        </p>
-        <button onClick={onToProfile} className="btn-action">Zum Profil ✨</button>
-        <button onClick={onClose} className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors">Schließen</button>
-      </div>
-    </div>
   );
 }

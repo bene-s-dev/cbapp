@@ -23,6 +23,9 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   const fetchProfile = useCallback(async (isInitial = false) => {
+    // Only show blocking loader if we have absolutely no profile data yet
+    // Note: We use a functional update or just check the local state if needed,
+    // but we must not depend on 'profile' itself in the dependency array.
     if (isInitial) setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -33,7 +36,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
-      
+
       if (error) throw error;
       setProfile(data);
       setNewName(data?.display_name || '');
@@ -42,11 +45,11 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // NO DEPENDENCIES HERE to avoid loop
 
   useEffect(() => {
     fetchProfile(true);
-
+  ...
     // Enhanced Device & State Detection
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
