@@ -53,21 +53,6 @@ html, body {
   overflow: hidden;
 }
 
-.top-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: calc(8rem + var(--sat));
-  background: linear-gradient(to bottom, 
-    rgba(255, 90, 95, 0.15) 0%, 
-    rgba(255, 138, 138, 0.10) 40%, 
-    rgba(162, 155, 254, 0.05) 70%, 
-    transparent 100%);
-  z-index: 5;
-  pointer-events: none;
-}
-
 .bg-aura {
   position: absolute; inset: 0; z-index: -1; overflow: hidden; 
   background: radial-gradient(circle at top right, #FFF0F0 0%, transparent 40%),
