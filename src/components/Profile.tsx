@@ -49,7 +49,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
 
   useEffect(() => {
     fetchProfile(true);
-  ...
+
     // Enhanced Device & State Detection
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
