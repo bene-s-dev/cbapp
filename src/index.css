@@ -18,8 +18,10 @@
   --card-border: #E2DFFF;
   
   /* Safe area variables */
-  --sat: env(safe-area-inset-top);
-  --sab: env(safe-area-inset-bottom);
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sal: env(safe-area-inset-left, 0px);
 }
 
 * {
@@ -27,30 +29,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 
-   The most reliable way to prevent black/white bars in PWAs 
-   is to NOT use position: fixed on html/body and ensure 
-   the background color is set on the html element.
-*/
-html {
-  background-color: #F8F7FF;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100%;
-  min-height: 100svh;
-  background-color: #F8F7FF;
+  height: 100%;
+  /* Use fixed color to match meta theme-color exactly */
+  background-color: #F8F7FF !important;
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow: hidden;
-  overscroll-behavior: none;
+  /* Crucial for edge-to-edge on some browsers */
+  position: relative;
 }
 
 #root {
@@ -59,7 +49,7 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background-color: #F8F7FF;
+  background-color: #F8F7FF !important;
   overflow: hidden;
 }
 
@@ -92,7 +82,7 @@ body {
   }
 
   .btn-secondary {
-    @apply w-full p-4 rounded-[22px] border-2 border-[var(--card-border)] text-[var(--muted)] font-semibold text-base cursor-pointer transition-all duration-300 bg-white active:scale-95;
+    @apply w-full p-4 rounded-[22px] border-2 border-[var(--card-border)] text-[var(--muted)] font-semibold text-base cursor-pointer transition-all duration-300 bg-white active:scale-95 shadow-sm;
   }
 
   .btn-secondary:hover { @apply border-[var(--secondary)] text-[var(--secondary)]; }
@@ -102,7 +92,7 @@ body {
   }
 
   .status-pill { 
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider; 
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider shadow-sm; 
   }
 
   .pill-green { @apply bg-green-50 text-[var(--accent-green)] border border-green-100; }
@@ -123,7 +113,6 @@ body {
 
   .nav-dock {
     @apply fixed bottom-6 left-4 right-4 h-16 bg-white/90 backdrop-blur-xl border-2 border-[var(--card-border)] rounded-[2rem] flex items-center justify-around px-2 z-50 shadow-lg;
-    padding-bottom: var(--sab);
     bottom: calc(1.5rem + var(--sab));
   }
 
