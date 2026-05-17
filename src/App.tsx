@@ -33,10 +33,10 @@ function AppLayout({
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+    <div className="h-[100svh] w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
       <div className="bg-aura" />
       
-      <main className="flex-1 flex flex-col relative z-10 px-4 pb-48 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+      <main className="flex-1 flex flex-col relative z-10 px-4 pb-32 pt-10 max-w-md mx-auto w-full overflow-visible">
         {children}
       </main>
 
@@ -94,129 +94,86 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [dynamicPartnerName, setDynamicPartnerName] = useState<string | null>(null);
-  const [dynamicPartnerAvatar, setDynamicPartnerAvatar] = useState<string | null>(null);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [showLockedModal, setShowLockedModal] = useState(false);
 
   const navigate = useNavigate();
 
-  const fetchProfile = useCallback(async (userId: string, forceLoading = false) => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    
-    if (forceLoading) setLoading(true);
-    
-    const maxRetries = 2;
-    let attempt = 0;
-    
-    while (attempt <= maxRetries) {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
-          .eq('id', userId)
-          .maybeSingle();
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, partner:partner_id(id, display_name, avatar_url)')
+        .eq('id', userId)
+        .maybeSingle();
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (!data) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const newProfile = {
-              id: userId,
-              display_name: user.user_metadata?.display_name || 'User',
-              partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
-              onboarding_completed: false
-            };
-            const { data: inserted, error: insertError } = await supabase.from('profiles').insert([newProfile]).select().maybeSingle();
-            if (insertError) throw insertError;
-            setProfile(inserted);
-          }
-        } else {
-          setProfile(data);
-          if (data.partner_id) {
-            const { data: partnerData } = await supabase.from('profiles').select('display_name, avatar_url').eq('id', data.partner_id).maybeSingle();
-            if (partnerData) {
-              setDynamicPartnerName(partnerData.display_name);
-              setDynamicPartnerAvatar(partnerData.avatar_url);
-            }
-          }
+      if (!data) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const newProfile = {
+            id: userId,
+            display_name: user.user_metadata?.display_name || 'Nutzer',
+            partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
+            onboarding_completed: false
+          };
+          const { data: inserted } = await supabase.from('profiles').insert([newProfile]).select().maybeSingle();
+          if (inserted) setProfile(inserted);
         }
-        setLoading(false);
-        return; 
-      } catch (e: any) {
-        attempt++;
-        if (attempt > maxRetries) {
-          setLoading(false);
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      } else {
+        setProfile(data);
+        if (data.partner) {
+          setPartnerProfile(data.partner);
         }
       }
+    } catch (e: any) {
+      console.error("Profil-Fehler:", e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     let mounted = true;
-
-    const initAuth = async () => {
-      const safetyTimeout = setTimeout(() => {
-        if (mounted && loading) setLoading(false);
-      }, 2500);
-
+    async function init() {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        clearTimeout(safetyTimeout);
-
+        const { data: { session: s }, error } = await supabase.auth.getSession();
+        if (error) throw error;
         if (mounted) {
-          if (initialSession) {
-            setSession(initialSession);
-            await fetchProfile(initialSession.user.id, true);
+          if (s) {
+            setSession(s);
+            fetchProfile(s.user.id);
           } else {
             setLoading(false);
           }
         }
       } catch (err) {
-        clearTimeout(safetyTimeout);
+        console.error("Auth-Initialisierungsfehler:", err);
         if (mounted) setLoading(false);
       }
-    };
+    }
+    init();
 
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return;
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-        if (currentSession) await fetchProfile(currentSession.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
+      setSession(s);
+      if (s) fetchProfile(s.user.id);
+      else {
         setProfile(null);
-        setDynamicPartnerName(null);
-        setDynamicPartnerAvatar(null);
+        setPartnerProfile(null);
         setLoading(false);
-        navigate('/signin', { replace: true });
       }
     });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [fetchProfile, navigate]); 
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [fetchProfile]);
 
   const handleOnboardingComplete = async () => {
     if (session) {
       setLoading(true); 
-      try {
-        await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', session.user.id);
-        await fetchProfile(session.user.id);
-        navigate('/dashboard');
-      } catch (e) {
-        setLoading(false);
-      }
+      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', session.user.id);
+      await fetchProfile(session.user.id);
+      navigate('/dashboard');
     }
   };
 
@@ -224,25 +181,34 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/signin" element={session ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => {}} initialMode="login" /></div>} />
-      <Route path="/signup" element={session ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => {}} initialMode="register" /></div>} />
+      <Route path="/signin" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="login" /></div>} />
+      <Route path="/signup" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="register" /></div>} />
       <Route path="/reset-password" element={<div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-4"><div className="bg-aura" /><ResetPassword onComplete={() => navigate('/signin')} /></div>} />
       
-      {/* Protected Area */}
       {session && profile ? (
         <Route path="*" element={
           <AppLayout profile={profile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
             <Routes>
               <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
-              <Route path="/dashboard" element={<Dashboard userName={profile.display_name} userAvatar={profile.avatar_url} partnerName={dynamicPartnerName || 'Partner'} partnerAvatar={dynamicPartnerAvatar} onStartQuestions={async () => { const { data } = await supabase.from('profiles').select('partner_id').eq('id', session.user.id).maybeSingle(); if (!data?.partner_id) setShowLockedModal(true); else navigate('/questions'); }} />} />
+              <Route path="/dashboard" element={<Dashboard 
+                userName={profile.display_name} 
+                userAvatar={profile.avatar_url} 
+                partnerName={partnerProfile?.display_name || 'Partner'} 
+                partnerAvatar={partnerProfile?.avatar_url}
+                partnerId={profile.partner_id}
+                onStartQuestions={() => {
+                  if (!profile.partner_id) setShowLockedModal(true);
+                  else navigate('/questions');
+                }} 
+              />} />
               <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} onComplete={() => navigate('/dashboard')} /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/profile" element={<Profile partnerName={dynamicPartnerName} onLogout={() => supabase.auth.signOut()} />} />
+              <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={() => supabase.auth.signOut()} />} />
               <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
             </Routes>
           </AppLayout>
         } />
       ) : (
-        <Route path="*" element={<Navigate to="/signin" replace />} />
+        <Route path="*" element={!loading ? <Navigate to="/signin" replace /> : <LoadingSkeleton />} />
       )}
     </Routes>
   );

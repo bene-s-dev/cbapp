@@ -18,23 +18,15 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
   const [selectedTot, setSelectedTot] = useState<string | null>(null);
   const [textVal, setTextVal] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Local state for ranking options to ensure SortableJS works correctly
   const [rankingOptions, setRankingOptions] = useState<string[]>([]);
   
   const sortableRef = useRef<HTMLDivElement>(null);
   const sortableInstance = useRef<Sortable | null>(null);
-
   const dayKey = getDailyKey();
 
   const loadDailyQuestions = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from('daily_questions')
-        .select('questions')
-        .eq('day_key', dayKey)
-        .maybeSingle();
-
+      const { data } = await supabase.from('daily_questions').select('questions').eq('day_key', dayKey).maybeSingle();
       if (data?.questions) {
         const q = data.questions;
         setDailyQs([q.tot, q.ranking, q.text]);
@@ -48,30 +40,19 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     }
   }, [dayKey]);
 
-  useEffect(() => {
-    loadDailyQuestions();
-  }, [loadDailyQuestions]);
+  useEffect(() => { loadDailyQuestions(); }, [loadDailyQuestions]);
 
-  // Sync local ranking options when step changes or questions load
   useEffect(() => {
-    if (dailyQs[step]?.o.length > 2) {
-      setRankingOptions([...dailyQs[step].o]);
-    }
+    if (dailyQs[step]?.o.length > 2) setRankingOptions([...dailyQs[step].o]);
   }, [step, dailyQs]);
 
   useEffect(() => {
     if (rankingOptions.length > 0 && sortableRef.current) {
       if (sortableInstance.current) sortableInstance.current.destroy();
-      
       sortableInstance.current = new Sortable(sortableRef.current, {
-        animation: 250,
-        ghostClass: 'sortable-ghost',
-        dragClass: 'sortable-drag',
-        forceFallback: true,
-        fallbackTolerance: 3,
+        animation: 250, ghostClass: 'sortable-ghost', forceFallback: true, fallbackTolerance: 3,
         onEnd: (evt) => {
           if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
-          
           setRankingOptions(prev => {
             const newOrder = [...prev];
             const [movedItem] = newOrder.splice(evt.oldIndex!, 1);
@@ -81,30 +62,21 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         }
       });
     }
-    return () => {
-      if (sortableInstance.current) sortableInstance.current.destroy();
-    };
-  }, [rankingOptions.length]); // Only re-init if the number of options changes, not on every re-order
+    return () => { if (sortableInstance.current) sortableInstance.current.destroy(); };
+  }, [rankingOptions.length]);
 
   const submit = async (finalResults: string[]) => {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
       const signature = dailyQs.map(q => `[${q.q}]`).join("");
       const finalChoice = finalResults.join(" | ") + " " + signature;
-
-      const { error } = await supabase.from('answers').insert([{ 
-        user_id: session.user.id, 
-        choice: finalChoice, 
-        day_key: dayKey 
-      }]);
-      
+      const { error } = await supabase.from('answers').insert([{ user_id: session.user.id, choice: finalChoice, day_key: dayKey }]);
       if (error) throw error;
       onComplete();
     } catch (err) {
-      alert("Fehler beim Speichern!");
+      alert("Ein Fehler ist aufgetreten beim Senden.");
       setIsSubmitting(false);
     }
   };
@@ -112,52 +84,33 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
   const handleNext = () => {
     const q = dailyQs[step];
     let val = '';
-
-    if (q.o.length === 2) {
-      val = selectedTot || '';
-    } else if (q.o.length > 2) {
-      val = rankingOptions.join(" > ");
-    } else {
-      val = textVal.trim();
-    }
+    if (q.o.length === 2) val = selectedTot || '';
+    else if (q.o.length > 2) val = rankingOptions.join(" > ");
+    else val = textVal.trim();
 
     if (!val) return;
-
     const newResults = [...results, val];
     setResults(newResults);
-
     if (step < 2) {
       setStep(step + 1);
       setSelectedTot(null);
       setTextVal('');
-      setRankingOptions([]); // Reset for next potential ranking
-    } else {
-      submit(newResults);
-    }
+      setRankingOptions([]);
+    } else submit(newResults);
   };
 
   if (loading) return (
     <div className="flex-1 flex flex-col animate-entrance">
-      <header className="mb-10">
-        <div className="prog-dots">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-10 h-1.5 rounded-full skeleton"></div>
-          ))}
-        </div>
-      </header>
-      
-      <div className="space-y-8">
-        <div className="h-12 rounded-[22px] skeleton" />
-        <div className="h-20 rounded-xl skeleton" />
-        <div className="space-y-4">
-          <div className="h-28 rounded-[28px] skeleton" />
-          <div className="h-28 rounded-[28px] skeleton" />
+      <header className="mb-6"><div className="prog-dots">{[0, 1, 2].map(i => (<div key={i} className="w-8 h-1 rounded-full skeleton"></div>))}</div></header>
+      <div className="space-y-4">
+        <div className="h-8 rounded-xl skeleton" />
+        <div className="h-16 rounded-xl skeleton" />
+        <div className="space-y-2">
+          <div className="h-20 rounded-[24px] skeleton" />
+          <div className="h-20 rounded-[24px] skeleton" />
         </div>
       </div>
-
-      <div className="mt-auto pb-6">
-        <div className="h-16 rounded-[22px] skeleton" />
-      </div>
+      <div className="mt-auto pb-4"><div className="h-14 rounded-[22px] skeleton" /></div>
     </div>
   );
 
@@ -166,33 +119,31 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
   const canContinue = (q.o.length === 2 && selectedTot) || (q.o.length > 2) || (q.o.length === 0 && textVal.trim().length > 0);
 
   return (
-    <div className="flex flex-col flex-1 animate-entrance overflow-hidden">
-      <div className="flex-1">
-        <header className="mb-4">
+    <div className="flex flex-col flex-1 animate-entrance overflow-hidden h-full">
+      <div className="flex-1 overflow-hidden">
+        <header className="mb-3">
           <div className="prog-dots">
-            {[0, 1, 2].map(i => (
-              <div key={i} className={`dot ${i === step ? 'active' : (i < step ? 'done' : '')}`}></div>
-            ))}
+            {[0, 1, 2].map(i => (<div key={i} className={`dot ${i === step ? 'active' : (i < step ? 'done' : '')}`}></div>))}
           </div>
         </header>
         
-        <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-          <div className="info-hint mb-4 py-3">
-            <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span className="text-xs">{q.h}</span>
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 overflow-hidden">
+          <div className="info-hint mb-3 py-2.5">
+            <Sparkles className="w-3 h-3 flex-shrink-0" />
+            <span className="text-[10px]">{q.h}</span>
           </div>
           
-          <h2 className="text-2xl font-bold mb-6 text-[#2D264B] leading-tight">
+          <h2 className="text-xl font-bold mb-4 text-[#2D264B] leading-tight line-clamp-3">
             {q.q}
           </h2>
 
-          <div id="quiz-input" className="space-y-3 pb-4">
+          <div id="quiz-input" className="space-y-2 pb-2">
             {q.o.length === 2 && (
               <div className="tot-grid">
                 {q.o.map((o, i) => (
                   <button 
                     key={i} 
-                    className={`tot-box py-6 ${selectedTot === o ? 'selected' : ''}`}
+                    className={`tot-box py-5 text-sm ${selectedTot === o ? 'selected' : ''}`}
                     onClick={() => setSelectedTot(o)}
                   >
                     {o}
@@ -204,9 +155,9 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
             {q.o.length > 2 && (
               <div ref={sortableRef} className="space-y-2">
                 {rankingOptions.map((o, i) => (
-                  <div key={o} className="rank-card py-3.5">
-                    <span className="rank-tag w-6 h-6 text-xs">{i + 1}</span>
-                    <span className="rank-card-text font-bold text-sm text-[#2D264B]">{o}</span>
+                  <div key={o} className="rank-card py-2.5">
+                    <span className="rank-tag w-6 h-6 text-[11px]">{i + 1}</span>
+                    <span className="font-bold text-sm text-[var(--text-main)] line-clamp-1">{o}</span>
                   </div>
                 ))}
               </div>
@@ -214,7 +165,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
 
             {q.o.length === 0 && (
               <textarea 
-                className="textarea-custom h-28 p-5 text-base"
+                className="textarea-custom h-24 p-4 text-sm font-bold"
                 placeholder="Deine Antwort hier..."
                 value={textVal}
                 onChange={(e) => setTextVal(e.target.value)}
@@ -225,18 +176,15 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         </div>
       </div>
 
-      <div className="pb-3 pt-2">
-        <button 
-          onClick={handleNext} 
-          disabled={!canContinue || isSubmitting}
-          className="btn-action"
-        >
+      <div className="pb-4 pt-2">
+        <button onClick={handleNext} disabled={!canContinue || isSubmitting} className="btn-action py-3.5">
           {isSubmitting ? 'Wird geteilt...' : (isLastStep ? (
-            <span className="flex items-center gap-2">Teilen <Heart className="w-5 h-5 fill-current" /></span>
+            <span className="flex items-center gap-2 text-sm">Teilen <Heart className="w-4 h-4 fill-current" /></span>
           ) : (
-            <span className="flex items-center gap-2">Weiter <ChevronRight className="w-5 h-5" /></span>
+            <span className="flex items-center gap-2 text-sm">Weiter <ChevronRight className="w-4 h-4" /></span>
           ))}
         </button>
-      </div>    </div>
+      </div>
+    </div>
   );
 }

@@ -34,6 +34,15 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     };
   }, []);
 
+  const translateError = (err: any) => {
+    const msg = err.message || '';
+    if (msg.includes('Invalid login credentials')) return 'E-Mail oder Passwort ist falsch.';
+    if (msg.includes('Email not confirmed')) return 'Bitte bestätige zuerst deine E-Mail-Adresse.';
+    if (msg.includes('User already registered')) return 'Diese E-Mail ist bereits registriert.';
+    if (msg.includes('Password should be')) return 'Das Passwort muss mindestens 6 Zeichen lang sein.';
+    return msg || 'Ein unerwarteter Fehler ist aufgetreten.';
+  };
+
   const handleRegisterFinal = async () => {
     if (!privacyAccepted) return;
     setLoading(true);
@@ -54,7 +63,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         setMessage({ type: 'success', text: 'Bestätigungslink wurde versendet! ✨ Bitte schau in dein Postfach.' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Registrierung fehlgeschlagen.' });
+      setMessage({ type: 'error', text: translateError(err) });
     } finally {
       setLoading(false);
     }
@@ -66,11 +75,16 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     if (mode === 'login') {
       setLoading(true);
       try {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const loginPromise = supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Zeitüberschreitung beim Login. Bitte prüfe deine Internetverbindung.")), 15000)
+        );
+
+        const { error } = await Promise.race([loginPromise, timeoutPromise]) as any;
         if (error) throw error;
         onLogin(false);
       } catch (err: any) {
-        setMessage({ type: 'error', text: err.message });
+        setMessage({ type: 'error', text: translateError(err) });
       } finally {
         setLoading(false);
       }
@@ -101,22 +115,26 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             </h1>
             
             <div className="text-[var(--text)] text-xl font-extrabold flex items-center justify-center select-none w-full" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-              <div className="flex items-baseline justify-center">
+              <div className="flex items-center justify-center">
                 <span className="whitespace-nowrap">Jeden Tag ein&nbsp;</span>
                 
-                <span className="inline-grid transition-[grid-template-columns] duration-1000 ease-in-out text-[var(--primary)]" 
-                      style={{ gridTemplateColumns: isKuss ? '0fr 1fr' : '1fr 0fr' }}>
-                  <span className="overflow-hidden whitespace-nowrap transition-all duration-1000 px-[1px]" 
+                <span className="relative inline-flex items-center justify-center text-[var(--primary)] h-[1.2em]">
+                  {/* Invisible spacer to maintain width of the largest word */}
+                  <span className="invisible px-[1px] whitespace-nowrap">Küsschen</span>
+                  
+                  <span className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap transition-all duration-1000 ease-in-out px-[1px]" 
                         style={{ 
                           opacity: isKuss ? 0 : 1, 
-                          filter: isKuss ? 'blur(4px)' : 'none'
+                          filter: isKuss ? 'blur(8px)' : 'none',
+                          transform: isKuss ? 'translateY(-10px)' : 'translateY(0)'
                         }}>
                     bisschen
                   </span>
-                  <span className="overflow-hidden whitespace-nowrap transition-all duration-1000 px-[1px]" 
+                  <span className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap transition-all duration-1000 ease-in-out px-[1px]" 
                         style={{ 
                           opacity: isKuss ? 1 : 0, 
-                          filter: isKuss ? 'none' : 'blur(4px)'
+                          filter: isKuss ? 'none' : 'blur(8px)',
+                          transform: isKuss ? 'translateY(0)' : 'translateY(10px)'
                         }}>
                     Küsschen
                   </span>

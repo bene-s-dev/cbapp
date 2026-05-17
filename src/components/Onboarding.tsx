@@ -33,7 +33,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         }
       }
     } catch (err) {
-      console.error("Error fetching profile during onboarding:", err);
+      console.error("Fehler beim Laden des Profils im Onboarding:", err);
     }
   }, []);
 
@@ -70,11 +70,11 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         .update({ partner_id: session.user.id })
         .eq('id', partnerProfile.id);
 
-      if (updateMeError || updatePartnerError) throw new Error("Verknüpfung fehlgeschlagen");
+      if (updateMeError || updatePartnerError) throw new Error("Verknüpfung fehlgeschlagen.");
 
       onComplete();
     } catch (err: any) {
-      alert(err.message);
+      alert("Fehler: " + err.message);
     } finally {
       setIsLinking(false);
     }
@@ -178,7 +178,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-[#1F1939]">Hi {userName}! ❤️</h2>
+              <h2 className="text-2xl font-bold text-[#1F1939]">Hallo {userName}! ❤️</h2>
               <p className="text-[var(--text)] text-[10px] leading-relaxed opacity-70">
                 Lass uns dein Profil vervollständigen.<br/>Möchtest du ein Foto hochladen?
               </p>
@@ -193,8 +193,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             </div>
             
             <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-[#1F1939]">Partner verknüpfen</h2>
-              <div className="space-y-2 text-left">
+              <h2 className="text-2xl font-bold text-[#1F1939]">Der erste Schritt</h2>
+              <p className="text-sm text-[var(--muted)] -mt-2">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
+              <div className="space-y-2 text-left pt-2">
                 <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest px-1">Dein Code zum Teilen:</p>
                 <div className="flex items-center justify-between bg-white p-4 rounded-xl border-2 border-dashed border-purple-100">
                   <span className="font-mono font-bold text-[var(--secondary)] tracking-widest text-base">{myProfile?.partner_code || '...'}</span>
