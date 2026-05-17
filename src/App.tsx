@@ -180,98 +180,6 @@ export default function App() {
     return <LoadingSkeleton />;
   }
 
-  // Fallback if profile is still missing after loading finished
-  const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
-    if (!profile && !loading) return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#1F1939] gap-4 bg-[#F8F7FF] px-4 text-center">
-        <p className="font-bold text-lg">Profil wird geladen...</p>
-        <button onClick={() => session?.user && fetchProfile(session.user.id, true)} className="btn-action">Erneut versuchen</button>
-        <button onClick={() => supabase.auth.signOut()} className="btn-secondary">Abmelden</button>
-      </div>
-    );
-
-    // Redirect to onboarding if not completed
-    if (!profile.onboarding_completed && location.pathname !== '/onboarding') {
-      return <Navigate to="/onboarding" replace />;
-    }
-
-    // Redirect away from onboarding if completed
-    if (profile.onboarding_completed && location.pathname === '/onboarding') {
-      return <Navigate to="/dashboard" replace />;
-    }
-
-    return (
-      <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
-        <div className="bg-aura" />
-        
-        <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
-          {children}
-        </main>
-
-        {profile.onboarding_completed && (
-          <nav className="nav-dock max-w-md mx-auto">
-            <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
-              <Home className="w-6 h-6" />
-            </NavLink>
-
-            <div className="relative">
-              {profile.partner_id ? (
-                <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
-                  <MessageCircle className="w-6 h-6" />
-                </NavLink>
-              ) : (
-                <div 
-                  onClick={() => setShowLockedModal(true)}
-                  className="nav-item opacity-40 cursor-pointer relative"
-                >
-                  <MessageCircle className="w-6 h-6" />
-                  <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5">
-                    <Lock className="w-2.5 h-2.5 text-[var(--primary)]" />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
-              <UserIcon className="w-6 h-6" />
-            </NavLink>
-          </nav>
-        )}
-
-        {/* Custom Locked Modal */}
-        {showLockedModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-            <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowLockedModal(false)} />
-            <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100">
-              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Lock className="w-8 h-8 text-[var(--primary)]" />
-              </div>
-              <h3 className="text-xl font-bold text-center text-[#1F1939] mb-4">Bereich gesperrt</h3>
-              <p className="text-center text-[#4A4468] leading-relaxed mb-8">
-                Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
-              </p>
-              <button 
-                onClick={() => {
-                  setShowLockedModal(false);
-                  navigate('/profile');
-                }}
-                className="btn-action"
-              >
-                Zum Profil ✨
-              </button>
-              <button 
-                onClick={() => setShowLockedModal(false)}
-                className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors"
-              >
-                Schließen
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <Routes>
       <Route path="/signin" element={
@@ -300,62 +208,108 @@ export default function App() {
       {/* Protected Routes */}
       <Route path="/onboarding" element={
         session ? (
-          <AuthenticatedLayout>
-            <Onboarding onComplete={handleOnboardingComplete} />
-          </AuthenticatedLayout>
+          profile ? (
+            profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : (
+              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+                <div className="bg-aura" />
+                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+                  <Onboarding onComplete={handleOnboardingComplete} />
+                </main>
+              </div>
+            )
+          ) : <LoadingSkeleton />
         ) : <Navigate to="/signin" replace />
       } />
       
       <Route path="/dashboard" element={
         session ? (
-          <AuthenticatedLayout>
-            <Dashboard 
-              userName={profile?.display_name} 
-              userAvatar={profile?.avatar_url}
-              partnerName={dynamicPartnerName || 'Partner'} 
-              partnerAvatar={dynamicPartnerAvatar}
-              onStartQuestions={async () => {
-                // Re-verify partner status to prevent stale state bypass
-                const { data } = await supabase
-                  .from('profiles')
-                  .select('partner_id')
-                  .eq('id', session.user.id)
-                  .maybeSingle();
-                
-                if (!data?.partner_id) {
-                  setShowLockedModal(true);
-                } else {
-                  navigate('/questions');
-                }
-              }} 
-            />
-          </AuthenticatedLayout>
+          profile ? (
+            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
+              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+                <div className="bg-aura" />
+                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+                  <Dashboard 
+                    userName={profile.display_name} 
+                    userAvatar={profile.avatar_url}
+                    partnerName={dynamicPartnerName || 'Partner'} 
+                    partnerAvatar={dynamicPartnerAvatar}
+                    onStartQuestions={async () => {
+                      const { data } = await supabase.from('profiles').select('partner_id').eq('id', session.user.id).maybeSingle();
+                      if (!data?.partner_id) setShowLockedModal(true);
+                      else navigate('/questions');
+                    }} 
+                  />
+                </main>
+                <nav className="nav-dock max-w-md mx-auto">
+                  <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
+                  <div className="relative">
+                    {profile.partner_id ? (
+                      <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
+                    ) : (
+                      <div onClick={() => setShowLockedModal(true)} className="nav-item opacity-40 cursor-pointer relative">
+                        <MessageCircle className="w-6 h-6" />
+                        <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5"><Lock className="w-2.5 h-2.5 text-[var(--primary)]" /></div>
+                      </div>
+                    )}
+                  </div>
+                  <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
+                </nav>
+                {showLockedModal && <LockedModal onClose={() => setShowLockedModal(false)} onToProfile={() => { setShowLockedModal(false); navigate('/profile'); }} />}
+              </div>
+            )
+          ) : <LoadingSkeleton />
         ) : <Navigate to="/signin" replace />
       } />
 
       <Route path="/questions" element={
         session ? (
-          <AuthenticatedLayout>
-            {profile?.partner_id ? (
-              <Questions 
-                userName={profile?.display_name} 
-                onComplete={() => navigate('/dashboard')} 
-              />
-            ) : (
-              <Navigate to="/dashboard" replace />
-            )}
-          </AuthenticatedLayout>
+          profile ? (
+            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
+              !profile.partner_id ? <Navigate to="/dashboard" replace /> : (
+                <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+                  <div className="bg-aura" />
+                  <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+                    <Questions userName={profile.display_name} onComplete={() => navigate('/dashboard')} />
+                  </main>
+                  <nav className="nav-dock max-w-md mx-auto">
+                    <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
+                    <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
+                    <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
+                  </nav>
+                </div>
+              )
+            )
+          ) : <LoadingSkeleton />
         ) : <Navigate to="/signin" replace />
       } />
 
       <Route path="/profile" element={
         session ? (
-          <AuthenticatedLayout>
-            <Profile 
-              partnerName={dynamicPartnerName}
-              onLogout={() => supabase.auth.signOut()} 
-            />
-          </AuthenticatedLayout>
+          profile ? (
+            !profile.onboarding_completed ? <Navigate to="/onboarding" replace /> : (
+              <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
+                <div className="bg-aura" />
+                <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+                  <Profile partnerName={dynamicPartnerName} onLogout={() => supabase.auth.signOut()} />
+                </main>
+                <nav className="nav-dock max-w-md mx-auto">
+                  <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Home className="w-6 h-6" /></NavLink>
+                  <div className="relative">
+                    {profile.partner_id ? (
+                      <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><MessageCircle className="w-6 h-6" /></NavLink>
+                    ) : (
+                      <div onClick={() => setShowLockedModal(true)} className="nav-item opacity-40 cursor-pointer relative">
+                        <MessageCircle className="w-6 h-6" />
+                        <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5"><Lock className="w-2.5 h-2.5 text-[var(--primary)]" /></div>
+                      </div>
+                    )}
+                  </div>
+                  <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><UserIcon className="w-6 h-6" /></NavLink>
+                </nav>
+                {showLockedModal && <LockedModal onClose={() => setShowLockedModal(false)} onToProfile={() => { setShowLockedModal(false); navigate('/profile'); }} />}
+              </div>
+            )
+          ) : <LoadingSkeleton />
         ) : <Navigate to="/signin" replace />
       } />
 
@@ -367,5 +321,25 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+  );
+}
+
+// Sub-component for the locked modal to keep Routes clean
+function LockedModal({ onClose, onToProfile }: { onClose: () => void; onToProfile: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100">
+        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+          <Lock className="w-8 h-8 text-[var(--primary)]" />
+        </div>
+        <h3 className="text-xl font-bold text-center text-[#1F1939] mb-4">Bereich gesperrt</h3>
+        <p className="text-center text-[#4A4468] leading-relaxed mb-8">
+          Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
+        </p>
+        <button onClick={onToProfile} className="btn-action">Zum Profil ✨</button>
+        <button onClick={onClose} className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors">Schließen</button>
+      </div>
+    </div>
   );
 }
