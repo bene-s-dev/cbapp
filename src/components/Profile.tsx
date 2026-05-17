@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, Link2, LogOut, Heart } from 'lucide-react';
+import { Camera, Copy, Link2, LogOut, Heart, Download } from 'lucide-react';
 
 interface ProfileProps {
   partnerName: string | null;
@@ -11,9 +11,26 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     fetchProfile();
+
+    // iOS Detection
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(ios);
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const fetchProfile = async () => {
@@ -25,10 +42,19 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
     
     setProfile(data);
     setLoading(false);
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
   };
 
   const handleLinkPartner = async () => {
@@ -88,6 +114,32 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
         </div>
 
         <div className="space-y-6">
+          {(deferredPrompt || isIOS) && (
+            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-6 rounded-[2rem] text-white shadow-lg relative overflow-hidden mb-2">
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                  <Download className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-1 text-white">Bisou App installieren ✨</h3>
+                  {isIOS ? (
+                    <p className="text-sm text-purple-50 opacity-90 leading-relaxed">
+                      Tippe auf das <span className="font-bold underline">Teilen-Icon</span> (Viereck mit Pfeil) und wähle <span className="font-bold underline">"Zum Home-Bildschirm"</span>.
+                    </p>
+                  ) : (
+                    <button 
+                      onClick={handleInstallClick}
+                      className="mt-2 bg-white text-purple-600 px-6 py-2 rounded-xl font-bold text-sm shadow-sm hover:scale-105 transition-all"
+                    >
+                      Installieren ✨
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+            </div>
+          )}
+
           <div className="bg-white p-6 rounded-[2rem] border border-[#edf2f7] shadow-sm">
             <h3 className="text-sm font-bold text-[var(--muted)] uppercase tracking-wider mb-4">Mein Partner-Code</h3>
             <div className="flex items-center justify-between bg-purple-50/50 p-4 rounded-2xl border-2 border-dashed border-purple-100">

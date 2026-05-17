@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { GREETINGS, POOL, Question } from '../constants/questions';
+import { GREETINGS, FALLBACK_QUESTIONS, Question } from '../constants/questions';
 import { Users, Lock } from 'lucide-react';
 
 interface DashboardProps {
@@ -27,54 +27,78 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('partner_id')
-      .eq('id', session.user.id)
-      .single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('partner_id')
+        .eq('id', session.user.id)
+        .maybeSingle();
 
-    const isLinked = !!profile?.partner_id;
-    setHasPartner(isLinked);
+      const isLinked = !!profile?.partner_id;
+      setHasPartner(isLinked);
 
-    const userIds = [session.user.id];
-    if (isLinked) userIds.push(profile.partner_id);
+      const userIds = [session.user.id];
+      if (isLinked) userIds.push(profile.partner_id);
 
-    const { data: answers } = await supabase
-      .from('answers')
-      .select('*')
-      .in('user_id', userIds)
-      .eq('day_key', dayKey);
+      const { data: answers } = await supabase
+        .from('answers')
+        .select('*')
+        .in('user_id', userIds)
+        .eq('day_key', dayKey);
 
-    const me = answers?.find(a => a.user_id === session.user.id);
-    const other = isLinked ? answers?.find(a => a.user_id === profile.partner_id) : null;
+      const me = answers?.find(a => a.user_id === session.user.id);
+      const other = isLinked ? answers?.find(a => a.user_id === profile.partner_id) : null;
 
-    if (me) {
-      setMeAnswered(true);
-      setMyAnswers(me.choice.split(" [")[0].split(" | "));
+      if (me) {
+        setMeAnswered(true);
+        setMyAnswers(me.choice.split(" [")[0].split(" | "));
+      }
+
+      if (other) {
+        setPartnerAnswered(true);
+        setPartnerAnswers(other.choice.split(" [")[0].split(" | "));
+      }
+
+      await loadDailyQuestions();
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
-
-    if (other) {
-      setPartnerAnswered(true);
-      setPartnerAnswers(other.choice.split(" [")[0].split(" | "));
-    }
-
-    loadDailyQuestions();
-    setLoading(false);
   };
 
-  const loadDailyQuestions = () => {
-    const seed = parseInt(dayKey.replace(/-/g, ''));
-    const getSeeded = (arr: any[], s: number) => arr[s % arr.length];
+  const loadDailyQuestions = async () => {
+    try {
+      const { data } = await supabase
+        .from('daily_questions')
+        .select('questions')
+        .eq('day_key', dayKey)
+        .maybeSingle();
 
-    setDailyQs([
-      getSeeded(POOL.tot, seed),
-      getSeeded(POOL.ranking, seed),
-      getSeeded(POOL.text, seed)
-    ]);
+      if (data?.questions) {
+        const q = data.questions;
+        setDailyQs([q.tot, q.ranking, q.text]);
+      } else {
+        setDailyQs([
+          FALLBACK_QUESTIONS.tot,
+          FALLBACK_QUESTIONS.ranking,
+          FALLBACK_QUESTIONS.text
+        ]);
+      }
+    } catch (error) {
+      setDailyQs([
+        FALLBACK_QUESTIONS.tot,
+        FALLBACK_QUESTIONS.ranking,
+        FALLBACK_QUESTIONS.text
+      ]);
+    }
   };
 
   const deleteMyOwn = async () => {

@@ -49,7 +49,7 @@ export default function App() {
         return;
       }
 
-      if (isInitialFetch) return; // Überspringen, wenn getSession noch läuft
+      if (isInitialFetch && event !== 'SIGNED_IN') return; // Überspringen, wenn getSession noch läuft, außer bei SIGNED_IN
 
       setSession(session);
       if (session) {
@@ -101,6 +101,15 @@ export default function App() {
           
           if (insertError) {
              console.error("❌ Self-Healing fehlgeschlagen:", insertError.message);
+             // Zweiter Versuch: Vielleicht war es ein Race Condition und das Profil wurde gerade erstellt?
+             const { data: retryData } = await supabase
+               .from('profiles')
+               .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
+               .eq('id', userId)
+               .maybeSingle();
+             if (retryData) {
+               data = retryData;
+             }
           } else {
              console.log("✨ Profil erfolgreich erstellt!");
              data = inserted;
@@ -196,8 +205,14 @@ export default function App() {
 
   const renderContent = () => {
     if (!profile) return (
-      <div className="flex items-center justify-center h-full text-[#2D264B]">
-        <p>Profil wird geladen...</p>
+      <div className="flex flex-col items-center justify-center h-full text-[#2D264B] gap-4">
+        <p>Profil konnte nicht geladen werden.</p>
+        <button 
+          onClick={() => session?.user && fetchProfile(session.user.id)}
+          className="bg-[var(--secondary)] text-white px-6 py-2 rounded-xl font-bold shadow-sm"
+        >
+          Neu laden
+        </button>
       </div>
     );
 

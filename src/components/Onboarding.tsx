@@ -23,7 +23,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         .from('profiles')
         .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
       setMyProfile(data);
       if (data) {
         setUserName(data.display_name);
@@ -33,7 +33,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   };
 
   const handleLinkPartner = async () => {
-    if (!partnerCodeInput) return;
+... (rest of methods unchanged)
     setLoading(true);
 
     try {

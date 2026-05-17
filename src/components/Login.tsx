@@ -112,7 +112,7 @@ export default function Login({ onLogin }: LoginProps) {
             style={{ 
               transitionDelay: active ? `${i * 35}ms` : '0ms',
             }}
-            className="inline-block transition-all duration-700"
+            className="inline-block transition-all duration-1000 ease-in-out"
           >
             {char === ' ' ? '\u00A0' : char}
           </span>
@@ -130,15 +130,18 @@ export default function Login({ onLogin }: LoginProps) {
           <h1 className="text-7xl font-bold text-[var(--text-main)] mb-4" style={{ fontFamily: 'Fraunces, serif' }}>
             Bisou
           </h1>
-          <div className="text-[var(--text)] text-xl font-medium flex items-center justify-center relative h-8" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            <span className="flex-shrink-0 transition-all duration-1000">Jeden Tag ein&nbsp;</span>
+          <div className="text-[var(--text)] text-xl font-bold flex items-center justify-center relative h-8 transition-all duration-1000 ease-in-out" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <span className="flex-shrink-0 transition-all duration-1000 ease-in-out">Jeden Tag ein&nbsp;</span>
             
             <div className="relative inline-flex items-center justify-center transition-all duration-1000 ease-in-out">
-               {renderMorphingWord("Bisschen", !isKuss)}
-               {renderMorphingWord("Küsschen", isKuss)}
+               <div className="relative inline-flex items-center justify-center transition-all duration-1000 ease-in-out">
+                 {renderMorphingWord("Biss", !isKuss)}
+                 {renderMorphingWord("Küss", isKuss)}
+               </div>
+               <span className="text-[var(--primary)] whitespace-nowrap transition-all duration-1000 ease-in-out">chen</span>
             </div>
             
-            <span className="flex-shrink-0 transition-all duration-1000">&nbsp;näher.</span>
+            <span className="flex-shrink-0 transition-all duration-1000 ease-in-out">&nbsp;näher.</span>
           </div>
         </div>
       )}

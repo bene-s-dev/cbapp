@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { POOL, Question } from '../constants/questions';
+import { FALLBACK_QUESTIONS, Question } from '../constants/questions';
 import Sortable from 'sortablejs';
 
 interface QuestionsProps {
@@ -53,15 +53,32 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const seed = parseInt(dayKey.replace(/-/g, ''));
-    const getSeeded = (arr: any[], s: number) => arr[s % arr.length];
+    try {
+      const { data } = await supabase
+        .from('daily_questions')
+        .select('questions')
+        .eq('day_key', dayKey)
+        .maybeSingle();
 
-    setDailyQs([
-      getSeeded(POOL.tot, seed),
-      getSeeded(POOL.ranking, seed),
-      getSeeded(POOL.text, seed)
-    ]);
-    setLoading(false);
+      if (data?.questions) {
+        const q = data.questions;
+        setDailyQs([q.tot, q.ranking, q.text]);
+      } else {
+        setDailyQs([
+          FALLBACK_QUESTIONS.tot,
+          FALLBACK_QUESTIONS.ranking,
+          FALLBACK_QUESTIONS.text
+        ]);
+      }
+    } catch (error) {
+      setDailyQs([
+        FALLBACK_QUESTIONS.tot,
+        FALLBACK_QUESTIONS.ranking,
+        FALLBACK_QUESTIONS.text
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = () => {
