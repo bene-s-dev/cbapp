@@ -110,11 +110,11 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       <div className="relative z-10 w-full flex-1 flex flex-col items-center">
         {mode === 'login' && (
           <div className="text-center mb-12 select-none w-full">
-            <h1 className="text-7xl font-bold text-[var(--text-main)] mb-8 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
+            <h1 className="text-7xl font-semibold text-[var(--text-main)] mb-8 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
             
-            <div className="text-[var(--text)] text-xl font-extrabold flex items-center justify-center select-none w-full" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <div className="text-[var(--text)] text-xl font-bold flex items-center justify-center select-none w-full" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               <div className="flex items-center justify-center">
                 <span className="whitespace-nowrap">Jeden Tag ein&nbsp;</span>
                 

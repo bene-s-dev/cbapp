@@ -19,6 +19,7 @@ import { FALLBACK_QUESTIONS } from './constants/questions';
 function AppLayout({ 
   children, 
   profile, 
+  partnerProfile,
   showLockedModal,
   setShowLockedModal 
 }: { 
@@ -35,17 +36,17 @@ function AppLayout({
     return <Navigate to="/onboarding" replace />;
   }
 
-  const isQuestions = location.pathname === '/questions';
-  const showHeader = profile.onboarding_completed && !isQuestions;
+  const isProfile = location.pathname === '/profile';
 
   return (
     <div className="h-[100svh] w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
       <div className="bg-aura" />
+      <div className="top-gradient" />
       
-      {showHeader && (
-        <header className="px-4 z-20 relative max-w-md mx-auto w-full" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
-          <div className="flex items-center justify-between min-h-[40px] relative">
-            <h1 className="text-2xl font-bold text-[var(--text-main)] tracking-tight select-none" style={{ fontFamily: 'Fraunces, serif' }}>
+      {profile.onboarding_completed && isProfile && (
+        <header className="px-4 z-20 absolute left-0 right-0 top-0 max-w-md mx-auto w-full pointer-events-none" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
+          <div className="flex items-start justify-between min-h-[40px]">
+            <h1 className="text-2xl font-semibold text-[var(--text-main)] tracking-tight select-none pointer-events-auto" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
             <div className="w-10 h-10" />
@@ -55,7 +56,7 @@ function AppLayout({
 
       <main 
         className="flex-1 flex flex-col relative z-10 px-4 pb-32 max-w-md mx-auto w-full overflow-visible"
-        style={{ paddingTop: showHeader ? '0' : 'calc(1.5rem + var(--sat))' }}
+        style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}
       >
         {children}
       </main>

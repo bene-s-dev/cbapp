@@ -31,7 +31,6 @@ export default function Dashboard({
   const dayKey = getDailyKey();
   const hasPartner = !!partnerId;
 
-  // Update countdown
   useEffect(() => {
     const timer = setInterval(() => {
       const remaining = getTimeUntilReset();
@@ -46,14 +45,11 @@ export default function Dashboard({
     return GREETINGS[seed % GREETINGS.length];
   }, [dayKey]);
 
-  // Derive state from dashboardData prop
   const { meAnswered, partnerAnswered, myAnswers, partnerAnswers, dailyQs } = useMemo(() => {
     if (!dashboardData) return { meAnswered: false, partnerAnswered: false, myAnswers: [], partnerAnswers: [], dailyQs: [] };
-    
     const { answers, questions } = dashboardData;
-    const me = answers.find((a: any) => a.user_id !== partnerId); // Assuming current user
+    const me = answers.find((a: any) => a.user_id !== partnerId);
     const other = partnerId ? answers.find((a: any) => a.user_id === partnerId) : null;
-
     return {
       meAnswered: !!me,
       partnerAnswered: !!other,
@@ -78,10 +74,10 @@ export default function Dashboard({
 
   if (!dashboardData) return (
     <div className="flex-1 flex flex-col animate-entrance">
-      <div className="relative h-[82px] mb-8">
-        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-4">
-          <div className="w-16 h-16 rounded-[1.5rem] skeleton border-2 border-white" />
-          <div className="w-16 h-16 rounded-[1.5rem] skeleton border-2 border-white" />
+      <div className="relative h-[110px] mb-8">
+        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-6">
+          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white" />
+          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white" />
         </div>
       </div>
       <div className="mb-6 space-y-2">
@@ -123,32 +119,32 @@ export default function Dashboard({
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
       <div className="flex-1 flex flex-col">
         {/* Avatars Section */}
-        <div className="relative h-[82px] mb-8 pointer-events-none">
+        <div className="relative h-[110px] mb-8 pointer-events-none">
           <div className="absolute left-1/2 -translate-x-1/2 flex items-start pointer-events-auto">
-            {/* My Avatar & Name */}
+            {/* Partner Avatar & Name (Left & Front) */}
             <div className="flex flex-col items-center relative z-20">
-              <div className="w-16 h-16 rounded-[1.5rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-sm">
-                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-6 h-6 text-purple-200" />)}
+              <div className={`w-20 h-20 rounded-[2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
+                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <span className="text-[8px] font-bold text-[var(--muted)] mt-1.5 uppercase tracking-[0.15em] max-w-[64px] truncate text-center">
-                {userName.split(' ')[0]}
+              <span className="text-[10px] font-bold text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
+                {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
               </span>
             </div>
 
-            {/* Partner Avatar & Name */}
-            <div className="flex flex-col items-center relative z-10 -ml-4">
-              <div className={`w-16 h-16 rounded-[1.5rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-sm ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-6 h-6 text-purple-200" />) : (<Users className="w-6 h-6 text-purple-200" />)}
+            {/* My Avatar & Name (Right & Back) */}
+            <div className="flex flex-col items-center relative z-10 -ml-6">
+              <div className="w-20 h-20 rounded-[2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
+                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <span className="text-[8px] font-bold text-[var(--muted)] mt-1.5 uppercase tracking-[0.15em] max-w-[64px] truncate text-center">
-                {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
+              <span className="text-[10px] font-bold text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
+                {userName.split(' ')[0]}
               </span>
             </div>
 
             {/* Floating Heart */}
             {hasPartner && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-10 z-30 shadow-sm border border-white w-6 h-6 rounded-full bg-red-50 flex items-center justify-center">
-                <HeartIcon className="w-3 h-3 text-[var(--primary)] fill-current" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-14 z-30 shadow-md border-2 border-white w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                <HeartIcon className="w-4 h-4 text-[var(--primary)] fill-current" />
               </div>
             )}
           </div>
@@ -160,60 +156,35 @@ export default function Dashboard({
         
         {!hasPartner ? (
           <div className="status-box flex flex-col items-center text-center p-6 mb-4">
-            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)]">
-              <Users className="w-6 h-6" />
-            </div>
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)]"><Users className="w-6 h-6" /></div>
             <p className="font-bold text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
-            <p className="text-xs text-[var(--text)] opacity-90 mb-4 leading-relaxed px-2">
-              Verknüpfe dich jetzt mit deinem Bisou-Partner:
-            </p>
-            <button 
-              onClick={() => navigate('/profile')}
-              className="btn-secondary py-2.5 px-6 text-xs w-auto shadow-sm"
-            >
-              Jetzt Code teilen ✨
-            </button>
+            <p className="text-xs text-[var(--text)] opacity-90 mb-4 leading-relaxed px-2">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
+            <button onClick={() => navigate('/profile')} className="btn-secondary py-2.5 px-6 text-xs w-auto shadow-sm">Jetzt Code teilen ✨</button>
           </div>
         ) : (
           <div className="space-y-2 mb-4">
             <div className="status-box flex-row items-center justify-between p-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-2 h-2 rounded-full ${meAnswered ? 'bg-[var(--accent-green)]' : 'bg-[var(--primary)]'}`} />
-                <span className="font-bold text-xs text-[var(--text-main)]">Meine Antwort</span>
-              </div>
-              <span className={`status-pill scale-75 ${meAnswered ? 'pill-green' : 'pill-red'}`}>
-                {meAnswered ? 'Fertig' : 'Offen'}
-              </span>
+              <div className="flex items-center gap-2.5"><div className={`w-2 h-2 rounded-full ${meAnswered ? 'bg-[var(--accent-green)]' : 'bg-[var(--primary)]'}`} /><span className="font-bold text-xs text-[var(--text-main)]">Meine Antwort</span></div>
+              <span className={`status-pill scale-75 ${meAnswered ? 'pill-green' : 'pill-red'}`}>{meAnswered ? 'Fertig' : 'Offen'}</span>
             </div>
-            
             <div className="status-box flex-row items-center justify-between p-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-2 h-2 rounded-full ${partnerAnswered ? 'bg-[var(--accent-green)]' : 'bg-purple-200'}`} />
-                <span className="font-bold whitespace-nowrap text-xs text-[var(--text-main)]">{partnerName}</span>
-              </div>
-              <span className={`status-pill scale-75 ${partnerAnswered ? 'pill-green' : 'bg-purple-50 text-purple-300 border border-purple-100'}`}>
-                {partnerAnswered ? 'Fertig' : 'Wartet'}
-              </span>
+              <div className="flex items-center gap-2.5"><div className={`w-2 h-2 rounded-full ${partnerAnswered ? 'bg-[var(--accent-green)]' : 'bg-purple-200'}`} /><span className="font-bold whitespace-nowrap text-xs text-[var(--text-main)]">{partnerName}</span></div>
+              <span className={`status-pill scale-75 ${partnerAnswered ? 'pill-green' : 'bg-purple-50 text-purple-300 border border-purple-100'}`}>{partnerAnswered ? 'Fertig' : 'Wartet'}</span>
             </div>
-
             <div className="status-box flex-row items-center justify-between p-3.5 bg-purple-50/30 border-dashed">
               <div className="flex items-center gap-2.5">
                 <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
-                <span className="font-bold text-[9px] text-[var(--muted)] uppercase tracking-wider">Nächste Fragen</span>
+                <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-[0.15em]">Nächste Fragen</span>
               </div>
-              <span className="font-mono font-bold text-xs text-[var(--secondary)]">
-                {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
-              </span>
+              <span className="font-mono font-bold text-xs text-[var(--secondary)]">{String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}</span>
             </div>
+
           </div>
         )}
       </div>
 
       <div className="pb-6 pt-1">
-        <button 
-          onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 
-          className="btn-action"
-        >
+        <button onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} className="btn-action">
           {meAnswered ? "Zu unseren Gedanken ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
       </div>
