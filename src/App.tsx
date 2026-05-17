@@ -176,90 +176,17 @@ export default function App() {
     }
   };
 
-  const [longLoading, setLongLoading] = useState(false);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (loading) {
-      timer = setTimeout(() => setLongLoading(true), 3500);
-    } else {
-      setLongLoading(false);
-    }
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  if (loading) {
-    return (
-      <>
-        <LoadingSkeleton />
-        {longLoading && (
-          <div className="fixed bottom-32 left-0 right-0 flex flex-col items-center gap-2 animate-in fade-in duration-500 px-10 text-center">
-            <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest opacity-40">Verbindung wird geprüft...</p>
-            <button 
-              onClick={() => {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
-              }}
-              className="text-[10px] text-[var(--secondary)] underline font-medium opacity-60"
-            >
-              Cache zurücksetzen & neu laden
-            </button>
-          </div>
-        )}
-      </>
-    );
+  if (loading && !profile) {
+    return <LoadingSkeleton />;
   }
 
-  // Show global error screen if config or auth failed critically
-  if (errorDetails && !profile) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#1F1939] gap-4 bg-[#F8F7FF] px-4 text-center">
-        <div className="bg-aura" />
-        <p className="font-bold text-lg relative z-10">
-          {errorDetails.includes(".env") ? "Konfigurationsfehler" : "Verbindungsproblem"}
-        </p>
-        <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-mono max-w-xs break-words relative z-10">
-          {errorDetails}
-        </div>
-        <div className="flex flex-col gap-3 w-full max-w-xs relative z-10">
-          <button 
-            onClick={() => window.location.reload()} 
-            className="btn-action"
-          >
-            Seite neu laden
-          </button>
-          {session && (
-            <button onClick={() => supabase.auth.signOut()} className="btn-secondary">
-              Abmelden
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+  // Fallback if profile is still missing after loading finished
   const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
-    if (!profile) return (
+    if (!profile && !loading) return (
       <div className="flex flex-col items-center justify-center h-screen w-screen text-[#1F1939] gap-4 bg-[#F8F7FF] px-4 text-center">
-        <p className="font-bold text-lg">
-          {errorDetails?.includes(".env") ? "Konfigurationsfehler" : "Profil konnte nicht geladen werden."}
-        </p>
-        {errorDetails && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-mono max-w-xs break-words">
-            {errorDetails}
-          </div>
-        )}
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          {!errorDetails?.includes(".env") && (
-            <button onClick={() => session?.user && fetchProfile(session.user.id)} className="btn-action">
-              Erneut versuchen
-            </button>
-          )}
-          <button onClick={() => supabase.auth.signOut()} className="btn-secondary">
-            Abmelden
-          </button>
-        </div>
+        <p className="font-bold text-lg">Profil wird geladen...</p>
+        <button onClick={() => session?.user && fetchProfile(session.user.id, true)} className="btn-action">Erneut versuchen</button>
+        <button onClick={() => supabase.auth.signOut()} className="btn-secondary">Abmelden</button>
       </div>
     );
 
