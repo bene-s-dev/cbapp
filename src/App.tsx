@@ -27,143 +27,100 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, forceLoading = false) => {
     if (!userId) {
       setLoading(false);
       return;
     }
     
-    // If we already have this profile, don't trigger the full loading screen
-    const isInitialLoad = !profile || profile.id !== userId;
+    const shouldShowLoading = forceLoading || !profile;
+    console.log("🔍 Fetching profile for:", userId, shouldShowLoading ? "(Loading)" : "(Background)");
     
-    console.log("🔍 Fetching profile for:", userId, isInitialLoad ? "(Initial)" : "(Refresh)");
-    if (isInitialLoad) setLoading(true);
-    setErrorDetails(null);
+    if (shouldShowLoading) setLoading(true);
     
-    try {
-      // 1. Load profile
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
-        .eq('id', userId)
-        .maybeSingle();
+    // Attempt with retry logic for mobile resilience
+    const maxRetries = 2;
+    let attempt = 0;
+    
+    while (attempt <= maxRetries) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (error) {
-        console.error("❌ Error fetching profile:", error.message);
-        setErrorDetails(error.message);
-        throw error;
-      }
+        if (error) throw error;
 
-      // 2. Self-Healing (Create profile if missing)
-      if (!data) {
-        console.log("⚠️ Profile missing in DB, attempting creation...");
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          const newProfile = {
-            id: userId,
-            display_name: user.user_metadata?.display_name || 'User',
-            partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
-            onboarding_completed: false
-          };
-
-          const { data: inserted, error: insertError } = await supabase
-            .from('profiles')
-            .insert([newProfile])
-            .select()
-            .maybeSingle();
-          
-          if (insertError) {
-             console.warn("⚠️ Insert failed (possibly exists now):", insertError.message);
-             // Final attempt to read
-             const { data: retryData, error: retryError } = await supabase
-               .from('profiles')
-               .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
-               .eq('id', userId)
-               .maybeSingle();
-             
-             if (retryError) {
-               console.error("❌ Final retry failed:", retryError.message);
-               setErrorDetails(retryError.message);
-             }
-             data = retryData;
-          } else {
-             console.log("✅ Profile created successfully via self-healing");
-             data = inserted;
-          }
-        }
-      }
-
-      if (data) {
-        console.log("✅ Profile loaded:", data.display_name);
-        setProfile(data);
-        
-        // Load partner name and avatar if linked
-        if (data.partner_id) {
-          const { data: partnerData } = await supabase
-            .from('profiles')
-            .select('display_name, avatar_url')
-            .eq('id', data.partner_id)
-            .maybeSingle();
-          if (partnerData) {
-            setDynamicPartnerName(partnerData.display_name);
-            setDynamicPartnerAvatar(partnerData.avatar_url);
+        if (!data) {
+          // Self-healing logic for missing profiles
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const newProfile = {
+              id: userId,
+              display_name: user.user_metadata?.display_name || 'User',
+              partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
+              onboarding_completed: false
+            };
+            const { data: inserted, error: insertError } = await supabase.from('profiles').insert([newProfile]).select().maybeSingle();
+            if (insertError) throw insertError;
+            setProfile(inserted);
           }
         } else {
-          setDynamicPartnerName(null);
-          setDynamicPartnerAvatar(null);
+          setProfile(data);
+          if (data.partner_id) {
+            const { data: partnerData } = await supabase.from('profiles').select('display_name, avatar_url').eq('id', data.partner_id).maybeSingle();
+            if (partnerData) {
+              setDynamicPartnerName(partnerData.display_name);
+              setDynamicPartnerAvatar(partnerData.avatar_url);
+            }
+          }
         }
-      } else {
-        console.error("❌ No profile data found even after self-healing attempts.");
-        setErrorDetails("Profil konnte in der Datenbank nicht gefunden oder erstellt werden.");
-        setProfile(null);
+        
+        setErrorDetails(null);
+        setLoading(false);
+        return; // Success
+      } catch (e: any) {
+        attempt++;
+        console.warn(`⚠️ Fetch attempt ${attempt} failed:`, e.message);
+        if (attempt > maxRetries) {
+          if (!profile) setErrorDetails("Verbindung fehlgeschlagen. Bitte prüfe dein Internet.");
+          setLoading(false);
+        } else {
+          // Wait a bit before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
       }
-    } catch (e: any) {
-      console.error("❌ Critical error in fetchProfile:", e);
-      setErrorDetails(e.message || "Unbekannter Fehler beim Laden des Profils.");
-      setProfile(null);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      // Safety timeout: if auth takes more than 7s, something is wrong
-      const timeoutId = setTimeout(() => {
-        if (mounted && loading) {
-          console.error("⌛ Auth initialization timed out");
-          setErrorDetails("Die Verbindung zu Supabase dauert zu lange. Bitte prüfe deine Internetverbindung.");
-          setLoading(false);
-        }
-      }, 7000);
-
-      // Check for config error first
-      const configError = (window as any).__SUPABASE_CONFIG_ERROR__;
-      if (configError) {
-        clearTimeout(timeoutId);
-        console.error("Supabase Config Error:", configError);
-        setErrorDetails(configError);
-        setLoading(false);
-        return;
+    // Handle mobile background/foreground transition
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session?.user?.id) {
+        console.log("📱 App back in foreground, refreshing session...");
+        fetchProfile(session.user.id);
       }
+    };
 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const initAuth = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
         if (mounted) {
-          clearTimeout(timeoutId);
           if (initialSession) {
             setSession(initialSession);
-            await fetchProfile(initialSession.user.id);
+            await fetchProfile(initialSession.user.id, true);
           } else {
             setLoading(false);
           }
         }
       } catch (err) {
-        clearTimeout(timeoutId);
         console.error("Auth init error:", err);
         if (mounted) setLoading(false);
       }
@@ -172,19 +129,11 @@ export default function App() {
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("🔔 Auth Event:", event);
-      
       if (!mounted) return;
 
-      if (event === 'PASSWORD_RECOVERY') {
-        navigate('/reset-password');
-        setLoading(false);
-        return;
-      }
-
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setSession(currentSession);
-        if (currentSession) {
+        if (currentSession && (!profile || profile.id !== currentSession.user.id)) {
           await fetchProfile(currentSession.user.id);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -192,24 +141,20 @@ export default function App() {
         setProfile(null);
         setDynamicPartnerName(null);
         setDynamicPartnerAvatar(null);
-        setErrorDetails(null);
         setLoading(false);
-        // Use window.location instead of navigate for a clean state reset on sign out
-        if (!window.location.pathname.includes('signin') && 
-            !window.location.pathname.includes('signup') && 
-            !window.location.pathname.includes('reset-password')) {
-          navigate('/signin');
+        if (!window.location.pathname.includes('signin')) {
+          navigate('/signin', { replace: true });
         }
-      } else if (event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
       }
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchProfile]); // Only depend on fetchProfile, which is wrapped in useCallback
+  }, [fetchProfile, navigate, session?.user?.id]); 
+
 
 
   const handleOnboardingComplete = async () => {
@@ -332,7 +277,7 @@ export default function App() {
       <div className="h-screen w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
         <div className="bg-aura" />
         
-        <main className="flex-1 flex flex-col relative z-10 px-4 pb-28 pt-4 max-w-md mx-auto w-full overflow-y-auto">
+        <main className="flex-1 flex flex-col relative z-10 px-4 pb-36 pt-4 max-w-md mx-auto w-full overflow-y-auto">
           {children}
         </main>
 

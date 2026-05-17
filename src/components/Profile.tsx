@@ -22,8 +22,8 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   const [newName, setNewName] = useState('');
   const [showIOSModal, setShowIOSModal] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
-    setLoading(true);
+  const fetchProfile = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -45,7 +45,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   }, []);
 
   useEffect(() => {
-    fetchProfile();
+    fetchProfile(true);
 
     // Enhanced Device & State Detection
     const ua = navigator.userAgent;
@@ -209,6 +209,14 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
       )}
 
       <div className="flex-1 flex flex-col pt-4 w-full">
+        {/* Header Section with Branding */}
+        <div className="flex items-center justify-between mb-8 relative min-h-[48px]">
+          <h1 className="text-3xl font-bold text-[var(--text-main)] tracking-tight select-none" style={{ fontFamily: 'Fraunces, serif' }}>
+            Bisou
+          </h1>
+          <div className="w-12 h-12" /> {/* Spacer */}
+        </div>
+
         <header className="flex flex-col items-center gap-3 mb-6">
           <label className="relative cursor-pointer group">
             <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
@@ -321,36 +329,36 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
               </div>
               
               {isStandalone ? (
-                <div className="flex items-center gap-2 text-[9px] font-bold text-green-600 bg-green-50/50 px-2 py-1 rounded-lg w-fit mt-1">
-                  <Check className="w-3 h-3" /> Installiert
+                <div className="flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50/50 px-3 py-1.5 rounded-lg w-fit mt-1">
+                  <Check className="w-3.5 h-3.5" /> Installiert
                 </div>
               ) : isIOS ? (
                 <button 
                   onClick={() => setShowIOSModal(true)}
-                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1 active:scale-95 transition-all"
+                  className="bg-white text-[var(--secondary)] px-4 py-2 rounded-xl font-bold text-xs mt-1 active:scale-95 transition-all shadow-sm"
                 >
-                  Installieren
+                  App installieren
                 </button>
               ) : deferredPrompt ? (
                 <button 
                   onClick={handleInstallClick}
-                  className="bg-white text-[var(--secondary)] px-3 py-1 rounded-xl font-bold text-[9px] mt-1 active:scale-95 transition-all"
+                  className="bg-white text-[var(--secondary)] px-4 py-2 rounded-xl font-bold text-xs mt-1 active:scale-95 transition-all shadow-sm"
                 >
-                  Installieren
+                  App installieren
                 </button>
               ) : isAndroid ? (
-                <div className="space-y-1">
-                  <p className="text-[8px] leading-tight opacity-90 mb-1">Automatische Installation nicht bereit.</p>
+                <div className="space-y-2">
                   <button 
                     onClick={() => alert("Tippe oben rechts im Chrome-Menü (⋮) auf 'App installieren'.")}
-                    className="bg-white/20 text-white border border-white/30 px-3 py-1 rounded-xl font-bold text-[9px] active:scale-95 transition-all"
+                    className="bg-white text-[var(--secondary)] px-4 py-2 rounded-xl font-bold text-xs mt-1 active:scale-95 transition-all shadow-sm"
                   >
-                    Anleitung
+                    App installieren
                   </button>
+                  <p className="text-[9px] leading-tight opacity-90">Falls kein Dialog erscheint: Über das Menü (⋮) installieren.</p>
                 </div>
               ) : (
-                <p className="text-[9px] leading-tight">
-                  Nur auf Mobilgeräten verfügbar.
+                <p className="text-xs leading-tight font-medium">
+                  Mobil nutzen für Installation.
                 </p>
               )}
             </div>

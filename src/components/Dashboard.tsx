@@ -174,13 +174,13 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
   if (loading) return (
     <div className="flex-1 flex flex-col animate-entrance">
       {/* Header Avatars Skeleton */}
-      <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[48px]">
+      <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[64px]">
         <div className="w-24 h-8 rounded-xl skeleton" />
-        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-3">
-          <div className="w-12 h-12 rounded-2xl skeleton border-2 border-[#F8F7FF]" />
-          <div className="w-12 h-12 rounded-2xl skeleton border-2 border-[#F8F7FF]" />
+        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-4">
+          <div className="w-16 h-16 rounded-[1.5rem] skeleton border-2 border-[#F8F7FF]" />
+          <div className="w-16 h-16 rounded-[1.5rem] skeleton border-2 border-[#F8F7FF]" />
         </div>
-        <div className="w-12 h-12" />
+        <div className="w-16 h-16" />
       </div>
 
       {/* Greeting Skeleton */}
@@ -257,42 +257,42 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
     <div className="animate-entrance flex flex-col flex-1">
       <div className="flex-1 flex flex-col">
         {/* Header Section with Left Branding and Centered Avatars */}
-        <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[48px]">
+        <div className="flex items-center justify-between mb-8 pt-2 relative min-h-[64px]">
           <h1 className="text-3xl font-bold text-[var(--text-main)] tracking-tight select-none" style={{ fontFamily: 'Fraunces, serif' }}>
             Bisou
           </h1>
           
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
-            <div className="flex -space-x-3">
-              <div className="w-12 h-12 rounded-2xl bg-white border-2 border-white flex items-center justify-center overflow-hidden relative z-20">
+            <div className="flex -space-x-4">
+              <div className="w-16 h-16 rounded-[1.5rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden relative z-20">
                 {userAvatar ? (
                   <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
                 ) : (
-                  <Camera className="w-5 h-5 text-purple-200" />
+                  <Camera className="w-6 h-6 text-purple-200" />
                 )}
               </div>
-              <div className={`w-12 h-12 rounded-2xl border-2 border-white flex items-center justify-center overflow-hidden relative z-10 ${
+              <div className={`w-16 h-16 rounded-[1.5rem] border-2 border-white flex items-center justify-center overflow-hidden relative z-10 ${
                 hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'
               }`}>
                 {partnerAvatar ? (
                   <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
                 ) : hasPartner ? (
-                  <Camera className="w-5 h-5 text-purple-200" />
+                  <Camera className="w-6 h-6 text-purple-200" />
                 ) : (
-                  <Users className="w-5 h-5 text-purple-200" />
+                  <Users className="w-6 h-6 text-purple-200" />
                 )}
               </div>
             </div>
             
             {hasPartner && (
-              <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center -mt-6 -ml-2 relative z-30">
-                <HeartIcon className="w-3 h-3 text-[var(--primary)] fill-current" />
+              <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center -mt-8 -ml-3 relative z-30">
+                <HeartIcon className="w-3.5 h-3.5 text-[var(--primary)] fill-current" />
               </div>
             )}
           </div>
 
           {/* Spacer to balance the layout */}
-          <div className="w-12 h-12" />
+          <div className="w-16 h-16" />
         </div>
 
         <div className="mb-6">
@@ -359,7 +359,7 @@ export default function Dashboard({ userName, userAvatar, partnerName, partnerAv
         )}
       </div>
 
-      <div className="pb-3 pt-2 bg-[#F8F7FF]">
+      <div className="pb-3 pt-2">
         {hasPartner ? (
           <button 
             onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} 

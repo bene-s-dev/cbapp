@@ -225,7 +225,7 @@ export default function Questions({ userName, onComplete }: QuestionsProps) {
         </div>
       </div>
 
-      <div className="pb-3 pt-2 bg-[#F8F7FF]">
+      <div className="pb-3 pt-2">
         <button 
           onClick={handleNext} 
           disabled={!canContinue || isSubmitting}
