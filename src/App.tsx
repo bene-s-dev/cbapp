@@ -19,7 +19,6 @@ import { FALLBACK_QUESTIONS } from './constants/questions';
 function AppLayout({ 
   children, 
   profile, 
-  partnerProfile,
   showLockedModal,
   setShowLockedModal 
 }: { 
@@ -128,8 +127,11 @@ export default function App() {
         supabase.from('daily_questions').select('questions').eq('day_key', dayKey).maybeSingle()
       ]);
 
+      const qData = questionsRes.data?.questions;
+      const currentQs = qData ? [qData.tot, qData.ranking, qData.text] : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
+
       if (profileRes.error) throw profileRes.error;
-      const data = profileRes.data;
+      let data = profileRes.data;
 
       if (!data) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -141,7 +143,10 @@ export default function App() {
             onboarding_completed: false
           };
           const { data: inserted } = await supabase.from('profiles').insert([newProfile]).select().maybeSingle();
-          if (inserted) setProfile(inserted);
+          if (inserted) {
+            setProfile(inserted);
+            setDashboardData({ answers: [], questions: currentQs });
+          }
         }
       } else {
         setProfile(data);
@@ -152,9 +157,6 @@ export default function App() {
 
         const { data: answers } = await supabase.from('answers').select('*').in('user_id', userIds).eq('day_key', dayKey);
         
-        const qData = questionsRes.data?.questions;
-        const currentQs = qData ? [qData.tot, qData.ranking, qData.text] : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
-
         setDashboardData({
           answers: answers || [],
           questions: currentQs
@@ -162,6 +164,7 @@ export default function App() {
       }
     } catch (e: any) {
       console.error("Profil-Fehler:", e);
+      setDashboardData({ answers: [], questions: [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text] });
     } finally {
       setLoading(false);
     }
@@ -169,30 +172,23 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-    async function init() {
-      try {
-        const { data: { session: s }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (mounted) {
-          if (s) {
-            setSession(s);
-            fetchProfile(s.user.id);
-          } else {
-            setLoading(false);
-          }
-        }
-      } catch (err) {
-        console.error("Auth-Initialisierungsfehler:", err);
-        if (mounted) setLoading(false);
+    
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (mounted && s) {
+        setSession(s);
+        fetchProfile(s.user.id);
+      } else if (mounted) {
+        setLoading(false);
       }
-    }
-    init();
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
-      setSession(s);
-      if (s) fetchProfile(s.user.id);
-      else {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(s);
+        if (s) fetchProfile(s.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
         setProfile(null);
         setPartnerProfile(null);
         setDashboardData(null);
