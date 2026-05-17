@@ -3,6 +3,7 @@ import {
   Camera, Link2, ArrowRight, Copy, Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import ImageCropper from './ImageCropper';
 
 export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(1); // 1: Photo, 2: Partner
@@ -11,6 +12,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [myProfile, setMyProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMyProfile();
@@ -74,31 +76,37 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Das Bild ist zu groß (max. 5 MB).");
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Das Bild ist zu groß (max. 10 MB).");
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => setSelectedImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setSelectedImage(null);
     setLoading(true);
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // 1. Show local preview immediately
-      const reader = new FileReader();
-      reader.onloadend = () => setAvatarPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      // 1. Show local preview
+      const localUrl = URL.createObjectURL(croppedBlob);
+      setAvatarPreview(localUrl);
 
       // 2. Upload to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Math.random()}.${fileExt}`;
+      const fileName = `${session.user.id}/${Math.random()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file);
+        .upload(fileName, croppedBlob, { contentType: 'image/jpeg', upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -123,6 +131,14 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="flex-1 flex flex-col justify-between pt-12 animate-in fade-in duration-500 relative">
+      {selectedImage && (
+        <ImageCropper 
+          image={selectedImage} 
+          onCropComplete={handleCropComplete} 
+          onCancel={() => setSelectedImage(null)} 
+        />
+      )}
+
       <header>
         <div className="prog-dots">
           {[1, 2].map((s) => (
@@ -136,7 +152,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 text-center px-4">
             <div className="relative mx-auto w-32 flex flex-col items-center">
               <label className="cursor-pointer block relative h-32 w-32 mb-3 group">
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={loading} />
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} disabled={loading} />
                 <div className={`w-32 h-32 rounded-[2.5rem] bg-white flex items-center justify-center border-2 border-dashed border-purple-100 overflow-hidden shadow-sm transition-all group-hover:border-[var(--secondary)] ${loading ? 'opacity-50' : ''}`}>
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />

@@ -4,12 +4,13 @@ import { ShieldCheck, ArrowRight, Mail } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (isNew?: boolean) => void;
+  initialMode?: AuthMode;
 }
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
-export default function Login({ onLogin }: LoginProps) {
-  const [mode, setMode] = useState<AuthMode>('login');
+export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [regStep, setRegStep] = useState(1); 
   
   const [email, setEmail] = useState('');

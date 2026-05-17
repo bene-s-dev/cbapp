@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, FALLBACK_QUESTIONS, Question } from '../constants/questions';
 import { Users, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   userName: string;
@@ -20,6 +21,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
   const [showComparison, setShowComparison] = useState(false);
   const [hasPartner, setHasPartner] = useState(false);
 
+  const navigate = useNavigate();
   const dayKey = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
@@ -170,7 +172,7 @@ export default function Dashboard({ userName, partnerName, onStartQuestions }: D
           <p className="font-bold mb-1">Partner verknüpfen</p>
           <p className="text-sm opacity-80 mb-4">Du musst erst einen Partner verknüpfen, um Fragen beantworten zu können.</p>
           <button 
-            onClick={() => window.location.href = '#profile'} // Dummy logic for now, app.tsx handles view
+            onClick={() => navigate('/profile')}
             className="text-sm font-bold text-[var(--secondary)] underline"
           >
             Jetzt Code teilen

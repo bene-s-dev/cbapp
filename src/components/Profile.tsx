@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Camera, Copy, Link2, LogOut, Heart, Download } from 'lucide-react';
+import ImageCropper from './ImageCropper';
 
 interface ProfileProps {
   partnerName: string | null;
@@ -13,6 +14,7 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -90,6 +92,45 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setSelectedImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setSelectedImage(null);
+    setLoading(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const fileName = `${session.user.id}/${Math.random()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, croppedBlob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id);
+
+      await fetchProfile();
+    } catch (err: any) {
+      alert("Fehler beim Upload: " + err.message);
+      setLoading(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex-1 flex items-center justify-center p-8 text-center animate-pulse text-[#2D264B] font-bold">
       Lädt...
@@ -98,15 +139,29 @@ export default function Profile({ partnerName, onLogout }: ProfileProps) {
 
   return (
     <div className="flex flex-col h-full animate-entrance">
+      {selectedImage && (
+        <ImageCropper 
+          image={selectedImage} 
+          onCropComplete={handleCropComplete} 
+          onCancel={() => setSelectedImage(null)} 
+        />
+      )}
+
       <div className="flex-1 overflow-y-auto pb-12">
         <div className="flex items-center gap-6 mb-10">
-          <div className="w-24 h-24 rounded-[2.5rem] bg-white border-2 border-purple-100 flex items-center justify-center overflow-hidden shadow-sm">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <Camera className="w-8 h-8 text-purple-200" />
-            )}
-          </div>
+          <label className="relative cursor-pointer group">
+            <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+            <div className="w-24 h-24 rounded-[2.5rem] bg-white border-2 border-purple-100 flex items-center justify-center overflow-hidden shadow-sm group-hover:border-[var(--secondary)] transition-all">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <Camera className="w-8 h-8 text-purple-200" />
+              )}
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </label>
           <div>
             <h2 className="text-2xl font-bold text-[#2D264B]">{profile?.display_name || 'User'}</h2>
             <p className="text-[var(--muted)] text-sm">Mein Profil</p>
