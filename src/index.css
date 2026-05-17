@@ -28,43 +28,52 @@
 }
 
 /* Radical fix for black bars and top gaps */
-html, body {
+html {
+  background-color: #F8F7FF !important;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
-  /* Force background color to system areas */
+  height: 100vh;
+  height: -webkit-fill-available;
   background-color: #F8F7FF !important;
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow: hidden;
-  position: fixed; /* Keep locked to prevent scrolling/bouncing revealing black */
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  /* Extra safeguard for Android Chrome theme integration */
+  contain: strict;
 }
 
 #root {
   width: 100%;
   height: 100%;
+  height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
-  background-color: #F8F7FF;
+  background-color: #F8F7FF !important;
   overflow: hidden;
 }
 
 .top-gradient {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  /* Make height large enough to cover status bar and more */
-  height: calc(8rem + var(--sat));
+  /* Larger height to ensure it blends with status bar icons */
+  height: calc(9rem + var(--sat));
   background: linear-gradient(to bottom, 
-    rgba(255, 90, 95, 0.15) 0%, 
-    rgba(255, 138, 138, 0.10) 40%, 
-    rgba(162, 155, 254, 0.05) 70%, 
+    rgba(255, 90, 95, 0.18) 0%, 
+    rgba(255, 138, 138, 0.12) 35%, 
+    rgba(162, 155, 254, 0.06) 65%, 
     transparent 100%);
   z-index: 5;
   pointer-events: none;
