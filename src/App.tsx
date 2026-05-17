@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Home, MessageCircle, User as UserIcon } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
-// Importiere die modularen Komponenten
+// Import modular components
 import Login from './components/Login';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
@@ -21,82 +21,35 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    let mounted = true;
-
-    // Initialen Session-Status abrufen
-    const initAuth = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      if (mounted) {
-        if (initialSession) {
-          setSession(initialSession);
-          await fetchProfile(initialSession.user.id);
-        } else {
-          setLoading(false);
-        }
-      }
-    };
-
-    initAuth();
-
-    // Auf Auth-Änderungen hören
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("🔔 Auth Event:", event);
-      
-      if (event === 'PASSWORD_RECOVERY') {
-        navigate('/reset-password');
-        setLoading(false);
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-        if (currentSession) {
-          await fetchProfile(currentSession.user.id);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setProfile(null);
-        setDynamicPartnerName(null);
-        setLoading(false);
-        navigate('/signin');
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-
-  const fetchProfile = async (userId: string) => {
-    if (!userId) return;
-    console.log("🔍 fetchProfile gestartet für:", userId);
+  const fetchProfile = useCallback(async (userId: string) => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    
+    console.log("🔍 Fetching profile for:", userId);
     setLoading(true);
     
     try {
-      // 1. Profil laden
+      // 1. Load profile
       let { data, error } = await supabase
         .from('profiles')
         .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) {
-        console.error("❌ Fehler beim Profil-Abruf:", error.message);
-      }
+      if (error) throw error;
 
-      // 2. Self-Healing (Profil erstellen falls fehlt)
+      // 2. Self-Healing (Create profile if missing)
       if (!data) {
-        console.log("⚠️ Profil fehlt in Datenbank, erstelle es jetzt...");
+        console.log("⚠️ Profile missing, creating...");
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: inserted, error: insertError } = await supabase
             .from('profiles')
             .insert([{
               id: userId,
-              display_name: user.user_metadata.display_name || 'User',
+              display_name: user.user_metadata?.display_name || 'User',
               partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
               onboarding_completed: false
             }])
@@ -104,7 +57,8 @@ export default function App() {
             .maybeSingle();
           
           if (insertError) {
-             console.error("❌ Self-Healing fehlgeschlagen:", insertError.message);
+             console.error("❌ Self-healing failed:", insertError.message);
+             // One last try reading
              const { data: retryData } = await supabase
                .from('profiles')
                .select('id, display_name, partner_id, partner_code, avatar_url, onboarding_completed')
@@ -120,7 +74,7 @@ export default function App() {
       if (data) {
         setProfile(data);
         
-        // Partner-Namen laden
+        // Load partner name if linked
         if (data.partner_id) {
           const { data: partnerData } = await supabase
             .from('profiles')
@@ -131,15 +85,69 @@ export default function App() {
         } else {
           setDynamicPartnerName(null);
         }
-      } else {
-        setSession(null);
       }
     } catch (e) {
-      console.error("❌ Schwerer Fehler in fetchProfile:", e);
+      console.error("❌ Critical error in fetchProfile:", e);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (mounted) {
+          setSession(initialSession);
+          if (initialSession) {
+            await fetchProfile(initialSession.user.id);
+          } else {
+            setLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("🔔 Auth Event:", event);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password');
+        setLoading(false);
+        return;
+      }
+
+      if (event === 'SIGNED_IN') {
+        setSession(currentSession);
+        if (currentSession) {
+          await fetchProfile(currentSession.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setProfile(null);
+        setDynamicPartnerName(null);
+        setLoading(false);
+        if (!['/signin', '/signup', '/reset-password'].includes(location.pathname)) {
+          navigate('/signin');
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        setSession(currentSession);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile, navigate, location.pathname]);
+
 
   const handleOnboardingComplete = async () => {
     if (session) {
@@ -170,32 +178,29 @@ export default function App() {
 
   const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
     if (!profile) return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#2D264B] gap-4 bg-[#F8F7FF]">
+      <div className="flex flex-col items-center justify-center h-screen w-screen text-[#2D264B] gap-4 bg-[#F8F7FF] px-6 text-center">
         <p>Profil konnte nicht geladen werden.</p>
-        <button 
-          onClick={() => session?.user && fetchProfile(session.user.id)}
-          className="bg-[var(--secondary)] text-white px-6 py-2 rounded-xl font-bold shadow-sm"
-        >
+        <button onClick={() => session?.user && fetchProfile(session.user.id)} className="btn-action max-w-xs">
           Neu laden
         </button>
       </div>
     );
 
-    // Wenn Onboarding nicht abgeschlossen, immer dahin leiten
+    // Redirect to onboarding if not completed
     if (!profile.onboarding_completed && location.pathname !== '/onboarding') {
-      return <Navigate to="/onboarding" />;
+      return <Navigate to="/onboarding" replace />;
     }
 
-    // Wenn Onboarding abgeschlossen, nicht mehr erlauben
+    // Redirect away from onboarding if completed
     if (profile.onboarding_completed && location.pathname === '/onboarding') {
-      return <Navigate to="/dashboard" />;
+      return <Navigate to="/dashboard" replace />;
     }
 
     return (
       <div className="h-screen w-screen overflow-hidden relative text-[#2D264B] select-none bg-[#F8F7FF] flex flex-col">
         <div className="bg-aura" />
         
-        <main className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 pb-24 pt-8">
+        <main className="flex-1 flex flex-col relative z-10 overflow-hidden px-6 pb-24 pt-8 max-w-lg mx-auto w-full">
           {children}
         </main>
 
@@ -221,35 +226,35 @@ export default function App() {
   return (
     <Routes>
       <Route path="/signin" element={
-        session ? <Navigate to="/" /> : (
-          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto">
+        session ? <Navigate to="/" replace /> : (
+          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-6">
             <div className="bg-aura" />
             <Login onLogin={() => {}} initialMode="login" />
           </div>
         )
       } />
       <Route path="/signup" element={
-        session ? <Navigate to="/" /> : (
-          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto">
+        session ? <Navigate to="/" replace /> : (
+          <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-6">
             <div className="bg-aura" />
             <Login onLogin={() => {}} initialMode="register" />
           </div>
         )
       } />
       <Route path="/reset-password" element={
-        <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12">
+        <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-6">
           <div className="bg-aura" />
           <ResetPassword onComplete={() => navigate('/signin')} />
         </div>
       } />
       
-      {/* Haupt-App Routen */}
+      {/* Protected Routes */}
       <Route path="/onboarding" element={
         session ? (
           <AuthenticatedLayout>
             <Onboarding onComplete={handleOnboardingComplete} />
           </AuthenticatedLayout>
-        ) : <Navigate to="/signin" />
+        ) : <Navigate to="/signin" replace />
       } />
       
       <Route path="/dashboard" element={
@@ -261,7 +266,7 @@ export default function App() {
               onStartQuestions={() => navigate('/questions')} 
             />
           </AuthenticatedLayout>
-        ) : <Navigate to="/signin" />
+        ) : <Navigate to="/signin" replace />
       } />
 
       <Route path="/questions" element={
@@ -272,7 +277,7 @@ export default function App() {
               onComplete={() => navigate('/dashboard')} 
             />
           </AuthenticatedLayout>
-        ) : <Navigate to="/signin" />
+        ) : <Navigate to="/signin" replace />
       } />
 
       <Route path="/profile" element={
@@ -283,16 +288,16 @@ export default function App() {
               onLogout={() => supabase.auth.signOut()} 
             />
           </AuthenticatedLayout>
-        ) : <Navigate to="/signin" />
+        ) : <Navigate to="/signin" replace />
       } />
 
       <Route path="/" element={
         session ? (
-          profile?.onboarding_completed ? <Navigate to="/dashboard" /> : <Navigate to="/onboarding" />
-        ) : <Navigate to="/signin" />
+          profile?.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />
+        ) : <Navigate to="/signin" replace />
       } />
 
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

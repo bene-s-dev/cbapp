@@ -11,11 +11,13 @@ export default defineConfig({
       manifest: {
         name: 'Bisou',
         short_name: 'Bisou',
-        description: 'Deine Bisou App',
-        theme_color: '#0f0a1a',
-        background_color: '#0f0a1a',
+        description: 'Deine tägliche Verbindung zum Partner',
+        theme_color: '#F8F7FF',
+        background_color: '#F8F7FF',
         display: 'standalone',
         orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: 'favicon.png',
