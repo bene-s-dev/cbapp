@@ -27,10 +27,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Radical fix for black bars and top gaps */
+/* 
+   The most reliable way to prevent black/white bars in PWAs 
+   is to NOT use position: fixed on html/body and ensure 
+   the background color is set on the html element.
+*/
 html {
-  background-color: #F8F7FF !important;
+  background-color: #F8F7FF;
   height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -38,42 +44,35 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
-  height: -webkit-fill-available;
-  background-color: #F8F7FF !important;
+  min-height: 100%;
+  min-height: 100svh;
+  background-color: #F8F7FF;
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Extra safeguard for Android Chrome theme integration */
-  contain: strict;
+  overscroll-behavior: none;
 }
 
 #root {
   width: 100%;
   height: 100%;
-  height: -webkit-fill-available;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background-color: #F8F7FF !important;
+  background-color: #F8F7FF;
   overflow: hidden;
 }
 
 .top-gradient {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  /* Larger height to ensure it blends with status bar icons */
-  height: calc(9rem + var(--sat));
+  height: calc(8rem + var(--sat));
   background: linear-gradient(to bottom, 
-    rgba(255, 90, 95, 0.18) 0%, 
-    rgba(255, 138, 138, 0.12) 35%, 
-    rgba(162, 155, 254, 0.06) 65%, 
+    rgba(255, 90, 95, 0.15) 0%, 
+    rgba(255, 138, 138, 0.10) 40%, 
+    rgba(162, 155, 254, 0.05) 70%, 
     transparent 100%);
   z-index: 5;
   pointer-events: none;
@@ -124,6 +123,7 @@ body {
 
   .nav-dock {
     @apply fixed bottom-6 left-4 right-4 h-16 bg-white/90 backdrop-blur-xl border-2 border-[var(--card-border)] rounded-[2rem] flex items-center justify-around px-2 z-50 shadow-lg;
+    padding-bottom: var(--sab);
     bottom: calc(1.5rem + var(--sab));
   }
 
