@@ -4,8 +4,10 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ImageCropper from './ImageCropper';
+import { useDialog } from './DialogProvider';
 
 export default function Onboarding({ onComplete }: { onComplete: () => void }) {
+  const { showAlert } = useDialog();
   const [step, setStep] = useState(1); // 1: Photo, 2: Partner
   const [userName, setUserName] = useState('');
   const [partnerCodeInput, setPartnerCodeInput] = useState('');
@@ -54,7 +56,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
 
       onComplete();
     } catch (err: any) {
-      alert("Fehler: " + (err.message || "Verknüpfung fehlgeschlagen."));
+      showAlert("Fehler: " + (err.message || "Verknüpfung fehlgeschlagen."), "error");
     } finally {
       setIsLinking(false);
     }
@@ -65,7 +67,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      alert("Das Bild ist zu groß (max. 10 MB).");
+      showAlert("Das Bild ist zu groß (max. 10 MB).", "error");
       return;
     }
 
@@ -82,9 +84,17 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      // 1. Delete previous image if exists (clean storage)
+      const { data: currentProfile } = await supabase.from('profiles').select('avatar_url').eq('id', session.user.id).single();
+      if (currentProfile?.avatar_url) {
+        const oldPath = currentProfile.avatar_url.split('/avatars/')[1];
+        if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);
+      }
+
       const localUrl = URL.createObjectURL(croppedBlob);
       setAvatarPreview(localUrl);
 
+      // 2. Upload new
       const fileName = `${session.user.id}/${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -104,7 +114,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       if (updateError) throw updateError;
       await fetchMyProfile();
     } catch (err: any) {
-      alert("Fehler beim Upload: " + err.message);
+      showAlert("Fehler beim Upload: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -121,9 +131,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
       )}
 
       <header className="mb-8">
-        <div className="prog-dots">
+        <div className="quiz-prog-dots">
           {[1, 2].map((s) => (
-            <div key={s} className={`dot ${s === step ? 'active' : (s < step ? 'done' : '')}`} />
+            <div key={s} className={`quiz-dot ${s === step ? 'active' : (s < step ? 'done' : '')}`} />
           ))}
         </div>
       </header>

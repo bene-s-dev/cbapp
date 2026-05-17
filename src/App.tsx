@@ -14,11 +14,13 @@ import ResetPassword from './components/ResetPassword';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { getDailyKey } from './lib/dateUtils';
 import { FALLBACK_QUESTIONS } from './constants/questions';
+import { DialogProvider } from './components/DialogProvider';
 
 // Separate Layout component to prevent remounting on navigation
 function AppLayout({ 
   children, 
   profile, 
+  partnerProfile,
   showLockedModal,
   setShowLockedModal 
 }: { 
@@ -53,37 +55,37 @@ function AppLayout({
       )}
 
       <main 
-        className="flex-1 flex flex-col relative z-10 px-4 pb-32 max-w-md mx-auto w-full overflow-visible"
+        className="flex-1 flex flex-col relative z-10 px-4 pb-28 max-w-md mx-auto w-full overflow-hidden"
         style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}
       >
-        {children}
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {children}
+        </div>
       </main>
 
       {profile.onboarding_completed && (
-        <nav className="nav-dock max-w-md mx-auto">
-          <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+        <nav className="fixed bottom-6 left-6 right-6 h-16 bg-white border border-purple-100 rounded-[2rem] flex items-center justify-around px-2 z-[100] shadow-[0_10px_30px_rgba(0,0,0,0.05)] max-w-md mx-auto" style={{ bottom: 'calc(1.5rem + var(--sab))' }}>
+          <NavLink to="/dashboard" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
             <Home className="w-6 h-6" />
           </NavLink>
 
-          <div className="relative">
-            {profile.partner_id ? (
-              <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
-                <MessageCircle className="w-6 h-6" />
-              </NavLink>
-            ) : (
-              <div 
-                onClick={() => setShowLockedModal(true)}
-                className="nav-item opacity-40 cursor-pointer relative"
-              >
-                <MessageCircle className="w-6 h-6" />
-                <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5">
-                  <Lock className="w-2.5 h-2.5 text-[var(--primary)]" />
-                </div>
+          {profile.partner_id ? (
+            <NavLink to="/questions" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
+              <MessageCircle className="w-6 h-6" />
+            </NavLink>
+          ) : (
+            <div 
+              onClick={() => setShowLockedModal(true)}
+              className="p-3 opacity-40 cursor-pointer relative text-purple-200"
+            >
+              <MessageCircle className="w-6 h-6" />
+              <div className="absolute top-2 right-2 bg-white rounded-full p-0.5 shadow-sm">
+                <Lock className="w-2 h-2 text-[var(--primary)]" />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+          <NavLink to="/profile" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
             <UserIcon className="w-6 h-6" />
           </NavLink>
         </nav>
@@ -224,40 +226,47 @@ export default function App() {
     }
   };
 
+  const refreshData = async () => {
+    if (session) await fetchProfile(session.user.id);
+  };
+
   if (loading && !profile) return <LoadingSkeleton />;
 
   return (
-    <Routes>
-      <Route path="/signin" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="login" /></div>} />
-      <Route path="/signup" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="register" /></div>} />
-      <Route path="/reset-password" element={<div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-4"><div className="bg-aura" /><ResetPassword onComplete={() => navigate('/signin')} /></div>} />
-      
-      {session && profile ? (
-        <Route path="*" element={
-          <AppLayout profile={profile} partnerProfile={partnerProfile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
-            <Routes>
-              <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
-              <Route path="/dashboard" element={<Dashboard 
-                userName={profile.display_name} 
-                userAvatar={profile.avatar_url} 
-                partnerName={partnerProfile?.display_name || 'Partner'} 
-                partnerAvatar={partnerProfile?.avatar_url}
-                partnerId={profile.partner_id}
-                dashboardData={dashboardData}
-                onStartQuestions={() => {
-                  if (!profile.partner_id) setShowLockedModal(true);
-                  else navigate('/questions');
-                }} 
-              />} />
-              <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} onComplete={() => window.location.reload()} /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={handleLogout} />} />
-              <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
-            </Routes>
-          </AppLayout>
-        } />
-      ) : (
-        <Route path="*" element={!loading ? <Navigate to="/signin" replace /> : <LoadingSkeleton />} />
-      )}
-    </Routes>
+    <DialogProvider>
+      <Routes>
+        <Route path="/signin" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="login" /></div>} />
+        <Route path="/signup" element={session && profile ? <Navigate to="/" replace /> : <div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto px-4"><div className="bg-aura" /><Login onLogin={() => setLoading(true)} initialMode="register" /></div>} />
+        <Route path="/reset-password" element={<div className="h-screen w-screen relative bg-[#F8F7FF] overflow-y-auto pt-12 px-4"><div className="bg-aura" /><ResetPassword onComplete={() => navigate('/signin')} /></div>} />
+        
+        {session && profile ? (
+          <Route path="*" element={
+            <AppLayout profile={profile} partnerProfile={partnerProfile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
+              <Routes>
+                <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
+                <Route path="/dashboard" element={<Dashboard 
+                  userName={profile.display_name} 
+                  userAvatar={profile.avatar_url} 
+                  partnerName={partnerProfile?.display_name || 'Partner'} 
+                  partnerAvatar={partnerProfile?.avatar_url}
+                  partnerId={profile.partner_id}
+                  dashboardData={dashboardData}
+                  onStartQuestions={() => {
+                    if (!profile.partner_id) setShowLockedModal(true);
+                    else navigate('/questions');
+                  }} 
+                />} />
+                <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} partnerName={partnerProfile?.display_name || 'Partner'} partnerId={profile.partner_id} onComplete={refreshData} /> : <Navigate to="/dashboard" replace />} />
+                <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={handleLogout} />} />
+                <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
+              </Routes>
+            </AppLayout>
+          } />
+        ) : (
+          <Route path="*" element={!loading ? <Navigate to="/signin" replace /> : <LoadingSkeleton />} />
+        )}
+      </Routes>
+    </DialogProvider>
   );
 }
+

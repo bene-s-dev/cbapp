@@ -4,6 +4,7 @@ import { GREETINGS, Question } from '../constants/questions';
 import { Users, Lock, Heart as HeartIcon, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDailyKey, getTimeUntilReset } from '../lib/dateUtils';
+import { useDialog } from './DialogProvider';
 
 interface DashboardProps {
   userName: string;
@@ -24,6 +25,7 @@ export default function Dashboard({
   dashboardData,
   onStartQuestions 
 }: DashboardProps) {
+  const { showAlert, showConfirm } = useDialog();
   const [showComparison, setShowComparison] = useState(false);
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
@@ -60,16 +62,20 @@ export default function Dashboard({
   }, [dashboardData, partnerId]);
 
   const deleteMyOwn = async () => {
-    if (window.confirm("Deine heutigen Antworten löschen und neu starten?")) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        await supabase.from('answers').delete().eq('day_key', dayKey).eq('user_id', user.id);
-        window.location.reload();
-      } catch (err) {
-        alert("Fehler beim Löschen der Antworten.");
-      }
-    }
+    showConfirm(
+      "Möchtest du deine heutigen Antworten wirklich löschen und neu starten?",
+      async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          await supabase.from('answers').delete().eq('day_key', dayKey).eq('user_id', user.id);
+          window.location.reload();
+        } catch (err) {
+          showAlert("Fehler beim Löschen der Antworten.", "error");
+        }
+      },
+      { title: "Antworten löschen", confirmLabel: "Ja, löschen", cancelLabel: "Abbrechen" }
+    );
   };
 
   if (!dashboardData) return (
@@ -151,41 +157,62 @@ export default function Dashboard({
         </div>
 
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-[#1F1939] leading-tight">{greeting}<br/><span className="text-[var(--secondary)] whitespace-nowrap">{userName}</span>! ❤️</h2>
+          <h2 className="text-xl font-bold text-[#1F1939] leading-tight">
+            {greeting} <span className="text-[var(--secondary)]">{userName}</span>! ❤️
+          </h2>
         </div>
         
         {!hasPartner ? (
-          <div className="status-box flex flex-col items-center text-center p-6 mb-4">
+          <div className="status-box flex flex-col items-center text-center p-6 mb-2">
             <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)]"><Users className="w-6 h-6" /></div>
             <p className="font-bold text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
             <p className="text-xs text-[var(--text)] opacity-90 mb-4 leading-relaxed px-2">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
             <button onClick={() => navigate('/profile')} className="btn-secondary py-2.5 px-6 text-xs w-auto shadow-sm">Jetzt Code teilen ✨</button>
           </div>
         ) : (
-          <div className="space-y-2 mb-4">
-            <div className="status-box flex-row items-center justify-between p-3.5">
-              <div className="flex items-center gap-2.5"><div className={`w-2 h-2 rounded-full ${meAnswered ? 'bg-[var(--accent-green)]' : 'bg-[var(--primary)]'}`} /><span className="font-bold text-xs text-[var(--text-main)]">Meine Antwort</span></div>
-              <span className={`status-pill scale-75 ${meAnswered ? 'pill-green' : 'pill-red'}`}>{meAnswered ? 'Fertig' : 'Offen'}</span>
-            </div>
-            <div className="status-box flex-row items-center justify-between p-3.5">
-              <div className="flex items-center gap-2.5"><div className={`w-2 h-2 rounded-full ${partnerAnswered ? 'bg-[var(--accent-green)]' : 'bg-purple-200'}`} /><span className="font-bold whitespace-nowrap text-xs text-[var(--text-main)]">{partnerName}</span></div>
-              <span className={`status-pill scale-75 ${partnerAnswered ? 'pill-green' : 'bg-purple-50 text-purple-300 border border-purple-100'}`}>{partnerAnswered ? 'Fertig' : 'Wartet'}</span>
-            </div>
-            <div className="status-box flex-row items-center justify-between p-3.5 bg-purple-50/30 border-dashed">
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
-                <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-[0.15em]">Nächste Fragen</span>
+          <div className="status-box p-5 mb-2 space-y-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`status-dot ${meAnswered ? 'status-green' : 'status-red'}`} />
+                  <span className="font-bold text-sm text-[var(--text-main)]">Meine Antwort</span>
+                </div>
+                <span className={`px-4 py-2 rounded-full font-black text-[11px] uppercase tracking-wider border ${meAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-red-50 text-[var(--primary)] border-red-100'}`}>
+                  {meAnswered ? 'Fertig' : 'Offen'}
+                </span>
               </div>
-              <span className="font-mono font-bold text-xs text-[var(--secondary)]">{String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}</span>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`status-dot ${partnerAnswered ? 'status-green' : 'status-orange'}`} />
+                  <span className="font-bold text-sm text-[var(--text-main)]">{partnerName}</span>
+                </div>
+                <span className={`px-4 py-2 rounded-full font-black text-[11px] uppercase tracking-wider border ${partnerAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
+                  {partnerAnswered ? 'Fertig' : 'Noch keine Antwort'}
+                </span>
+              </div>
             </div>
 
+            <div className="pt-4 border-t border-purple-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[var(--muted)]" />
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Neue Fragen in:</span>
+              </div>
+              <span className="font-mono font-black text-sm text-[var(--secondary)]">
+                {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+              </span>
+            </div>
           </div>
         )}
+
+        <p className="text-[9px] font-bold text-center text-[var(--muted)] flex items-center justify-center gap-1 uppercase tracking-widest opacity-70">
+          Fragen generiert von Gemini ✨
+        </p>
       </div>
 
       <div className="pb-6 pt-1">
-        <button onClick={meAnswered ? () => setShowComparison(true) : onStartQuestions} className="btn-action">
-          {meAnswered ? "Zu unseren Gedanken ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
+        <button onClick={onStartQuestions} className="btn-action">
+          {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
       </div>
     </div>
