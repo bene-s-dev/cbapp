@@ -33,10 +33,8 @@ export default function App() {
       return;
     }
     
-    const shouldShowLoading = forceLoading || !profile;
-    console.log("🔍 Fetching profile for:", userId, shouldShowLoading ? "(Loading)" : "(Background)");
-    
-    if (shouldShowLoading) setLoading(true);
+    if (forceLoading) setLoading(true);
+    setErrorDetails(null);
     
     // Attempt with retry logic for mobile resilience
     const maxRetries = 2;
@@ -84,15 +82,14 @@ export default function App() {
         attempt++;
         console.warn(`⚠️ Fetch attempt ${attempt} failed:`, e.message);
         if (attempt > maxRetries) {
-          if (!profile) setErrorDetails("Verbindung fehlgeschlagen. Bitte prüfe dein Internet.");
+          setErrorDetails("Verbindung fehlgeschlagen. Bitte prüfe dein Internet.");
           setLoading(false);
         } else {
-          // Wait a bit before retrying (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
     }
-  }, [profile]);
+  }, []); // Empty dependency array to break the infinite loop
 
   useEffect(() => {
     let mounted = true;
@@ -133,7 +130,7 @@ export default function App() {
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setSession(currentSession);
-        if (currentSession && (!profile || profile.id !== currentSession.user.id)) {
+        if (currentSession) {
           await fetchProfile(currentSession.user.id);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -142,9 +139,7 @@ export default function App() {
         setDynamicPartnerName(null);
         setDynamicPartnerAvatar(null);
         setLoading(false);
-        if (!window.location.pathname.includes('signin')) {
-          navigate('/signin', { replace: true });
-        }
+        navigate('/signin', { replace: true });
       }
     });
 
