@@ -51,6 +51,15 @@ function AppLayout({
             <h1 className="text-2xl font-semibold text-[var(--text-main)] tracking-tight select-none pointer-events-auto" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
+            {location.pathname === '/profile' && (
+              <button 
+                onClick={onLogout} 
+                className="p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 pointer-events-auto"
+                title="Abmelden"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </header>
       )}

@@ -139,7 +139,7 @@ export default function Dashboard({
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
       <div className="flex-1 flex flex-col">
         {/* Avatars Section */}
-        <div className="relative h-[110px] mb-4 pointer-events-none">
+        <div className="relative h-[110px] mb-10 pointer-events-none">
           <div className="absolute left-1/2 -translate-x-1/2 flex items-start pointer-events-auto mt-4">
             {/* Partner Avatar & Name (Left & Front) */}
             <div className="flex flex-col items-center relative z-20">
@@ -219,12 +219,12 @@ export default function Dashboard({
           </div>
         )}
 
-        <p className="text-[8px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-1.5 uppercase tracking-[0.2em] opacity-50 mt-1">
+        <p className="text-[8px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-1.5 uppercase tracking-[0.2em] opacity-50 mt-0.5">
           <Sparkles className="w-2.5 h-2.5" /> Fragen generiert von Gemini
         </p>
       </div>
 
-      <div className="pb-4 pt-1">
+      <div className="pb-3 pt-0">
         <button onClick={onStartQuestions} className="btn-action py-4 font-black text-base">
           {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
