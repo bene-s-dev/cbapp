@@ -271,3 +271,20 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_answer_update_streak
   AFTER INSERT ON public.answers
   FOR EACH ROW EXECUTE FUNCTION public.update_streak();
+
+-- PUSH SUBSCRIPTIONS
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  subscription JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id)
+);
+
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own subscriptions" ON public.push_subscriptions
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Note: Sending push notifications requires a server-side component (Edge Function)
+-- that uses the VAPID keys to send messages to the browser's push service.

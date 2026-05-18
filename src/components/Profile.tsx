@@ -34,11 +34,69 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   const [newName, setNewName] = useState(initialProfile?.display_name || '');
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [isPushLoading, setIsPushLoading] = useState(false);
 
   useEffect(() => {
     setProfile(initialProfile);
     setNewName(initialProfile?.display_name || '');
+    
+    // Check initial push status
+    const checkPush = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setPushEnabled(!!subscription);
+      }
+    };
+    checkPush();
   }, [initialProfile]);
+
+  const handleTogglePush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      showAlert("Browser unterstützt keine Benachrichtigungen.", "error");
+      return;
+    }
+
+    setIsPushLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const existingSubscription = await registration.pushManager.getSubscription();
+
+      if (existingSubscription) {
+        // DISABLE
+        await existingSubscription.unsubscribe();
+        await supabase.from('push_subscriptions').delete().eq('user_id', profile.id);
+        setPushEnabled(false);
+        showAlert("Benachrichtigungen deaktiviert.", "info");
+      } else {
+        // ENABLE
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          showAlert("Berechtigung verweigert. Bitte in den Browsereinstellungen aktivieren.", "error");
+          return;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: 'BM8FOwuRD2p8N7BtyT_a2CC1h9rdEcacNBfuMSS2BfxMlWDYQPKl1lriUMf_cV3k3Cq2ToxbHaFHPslUtQ074GI'
+        });
+        
+        await supabase.from('push_subscriptions').upsert({ 
+          user_id: profile.id, 
+          subscription: subscription.toJSON() 
+        });
+
+        setPushEnabled(true);
+        showAlert("Benachrichtigungen aktiviert! ✨", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert("Fehler bei den Benachrichtigungen.", "error");
+    } finally {
+      setIsPushLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -243,7 +301,8 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-hidden">
-        <header className="flex flex-col items-center mb-6 relative pt-14 shrink-0">
+        <header className="flex flex-col items-center mb-6 relative pt-8 shrink-0">
+          <h2 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-8">Mein Bisou-Profil</h2>
           <div className="flex flex-col items-center">
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
@@ -281,23 +340,20 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
           {profile?.partner_id ? (
-            <div className="status-box p-5 flex flex-col items-center justify-center gap-3 text-center shrink-0">
-              <div className="flex flex-col items-center gap-1">
+            <div className="status-box p-5 pb-4 flex flex-col items-center justify-center gap-3 text-center shrink-0 min-h-[140px] relative">
+              <div className="flex flex-col items-center gap-1 mb-4">
                 <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">Mein Bisou-Partner:</span>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="font-black text-xl text-[var(--text-main)] tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
-                  <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center shadow-sm">
-                    <Heart className="w-3.5 h-3.5 text-[var(--primary)] fill-current" />
-                  </div>
                 </div>
               </div>
               
               <button 
                 onClick={handleUnlinkPartner} 
                 disabled={isLinking}
-                className="text-[10px] font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors cursor-pointer active:scale-95 uppercase tracking-widest"
+                className="absolute bottom-4 text-[9px] font-black text-red-400 hover:text-red-500 transition-colors cursor-pointer active:scale-95 uppercase tracking-[0.2em] flex items-center gap-1.5"
               >
-                Verknüpfung aufheben
+                Verknüpfung aufheben <XCircle className="w-3 h-3" />
               </button>
             </div>
           ) : (
@@ -353,25 +409,36 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
             </div>
           )}
 
-          {/* App Nutzung */}
-          {!isStandalone && (
-            <div className="flex justify-center pt-2 shrink-0">
-              {isDesktop ? (
-                <div className="status-box p-3.5 text-center">
-                  <p className="text-[11px] font-bold text-[var(--muted)] leading-tight">
-                    Mobil-Installation empfohlen.
-                  </p>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setShowInstallModal(true)} 
-                  className="btn-secondary py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2"
-                >
-                  Bisou-App installieren
-                </button>
-              )}
-            </div>
-          )}
+          {/* App Nutzung & Benachrichtigungen */}
+          <div className="flex flex-col gap-2.5 pt-2 shrink-0">
+            <button 
+              onClick={handleTogglePush}
+              disabled={isPushLoading}
+              className={`flex items-center justify-center gap-3 py-4 px-6 rounded-[22px] border-2 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm ${pushEnabled ? 'bg-green-50 border-green-100 text-[var(--accent-green)]' : 'bg-white border-[var(--card-border)] text-[var(--muted)] hover:border-[var(--secondary)]'}`}
+            >
+              {pushEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+              {pushEnabled ? 'Benachrichtigungen Aktiv' : 'Benachrichtigungen Aktivieren'}
+            </button>
+
+            {!isStandalone && (
+              <div className="flex justify-center">
+                {isDesktop ? (
+                  <div className="status-box p-3.5 text-center w-full">
+                    <p className="text-[11px] font-bold text-[var(--muted)] leading-tight">
+                      Mobil-Installation empfohlen.
+                    </p>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setShowInstallModal(true)} 
+                    className="btn-secondary py-3.5 px-6 text-[10px] font-black uppercase tracking-widest w-full shadow-sm border-2"
+                  >
+                    Bisou-App installieren
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="mt-auto pb-4 flex justify-center shrink-0">
             <button 

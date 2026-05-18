@@ -8,7 +8,7 @@
   "theme_color": "#F8F7FF",
   "lang": "de",
   "scope": "/",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["standalone", "window-controls-overlay"],
   "orientation": "portrait",
   "icons": [
     {

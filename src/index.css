@@ -41,6 +41,9 @@ html, body {
   overflow: hidden;
   /* Crucial for edge-to-edge on some browsers */
   position: relative;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #root {

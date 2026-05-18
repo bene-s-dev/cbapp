@@ -210,49 +210,42 @@ export default function Dashboard({
   return (
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
       <div className="flex-1 flex flex-col">
-        {/* Avatars & Streaks Section */}
-        <div className="relative h-[150px] mb-10">
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-start mt-4">
+        {/* Avatars & Streaks Section - Lowered and Centered */}
+        <div className="relative h-[160px] mb-6">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-start mt-12">
             {/* Partner Avatar & Name */}
             <div className="flex flex-col items-center relative z-20">
-              <div className="relative">
-                <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-                  {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
-                </div>
+              <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
+                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+              </div>
+              <div className="flex items-center gap-1.5 mt-2.5">
+                <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[60px] truncate">
+                  {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
+                </span>
                 {hasPartner && (
-                  <button onClick={() => setShowStreakModal('partner')} className="absolute -top-2 -left-2 bg-white rounded-2xl p-2 border-2 border-purple-50 shadow-sm flex items-center gap-1.5 active:scale-90 transition-transform">
-                    <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
-                    <span className="text-[10px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
+                  <button onClick={() => setShowStreakModal('partner')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
+                    <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
+                    <span className="text-[9px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
                   </button>
                 )}
               </div>
-              <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
-                {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
-              </span>
             </div>
 
             {/* My Avatar & Name */}
             <div className="flex flex-col items-center relative z-10 -ml-6">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
-                  {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
-                </div>
-                <button onClick={() => setShowStreakModal('me')} className="absolute -top-2 -right-2 bg-white rounded-2xl p-2 border-2 border-purple-50 shadow-sm flex items-center gap-1.5 active:scale-90 transition-transform">
-                  <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
-                  <span className="text-[10px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
+              <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
+                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+              </div>
+              <div className="flex items-center gap-1.5 mt-2.5">
+                <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[60px] truncate">
+                  {userName.split(' ')[0]}
+                </span>
+                <button onClick={() => setShowStreakModal('me')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
+                  <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
+                  <span className="text-[9px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
                 </button>
               </div>
-              <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
-                {userName.split(' ')[0]}
-              </span>
             </div>
-
-            {/* Floating Heart */}
-            {hasPartner && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-12 z-30 shadow-md border-2 border-white w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
-                <HeartIcon className="w-4 h-4 text-[var(--primary)] fill-current" />
-              </div>
-            )}
           </div>
         </div>
 
@@ -306,7 +299,7 @@ export default function Dashboard({
         )}
 
         <p className="text-[8px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-1.5 uppercase tracking-[0.2em] opacity-50 mt-0.5">
-          <Sparkles className="w-2.5 h-2.5" /> Fragen generiert von Gemini
+          Fragen generiert von Gemini <Sparkles className="w-2.5 h-2.5" />
         </p>
       </div>
 

@@ -322,8 +322,8 @@ export default function Questions({ userName, partnerName, partnerId, dashboardD
         ) : (
           // --- RESULTS VIEW ---
           <div className="flex flex-col flex-1 h-full overflow-hidden">
-            <div className="flex-1 overflow-hidden pr-1 pb-4">
-              <div className="space-y-10 pb-10 pt-4">
+            <div className="flex-1 overflow-y-auto pr-1">
+              <div className="space-y-10 pb-24 pt-4">
                 {dailyQs.map((question, i) => {
                   const m = myResults[i] || "—";
                   const p = partnerResults?.[i];
@@ -358,7 +358,7 @@ export default function Questions({ userName, partnerName, partnerId, dashboardD
                 })}
               </div>
             </div>
-            <div className="pb-6 pt-2 text-center">
+            <div className="pb-8 pt-4 text-center bg-gradient-to-t from-[#F8F7FF] via-[#F8F7FF] to-transparent">
               <button onClick={resetQuiz} className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--primary)] transition-colors py-2">
                 Antworten zurücksetzen
               </button>
