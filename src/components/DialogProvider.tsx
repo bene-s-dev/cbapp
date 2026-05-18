@@ -66,26 +66,30 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       {confirm && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setConfirm(null)} />
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm relative z-10 animate-entrance border-2 border-blue-50 shadow-2xl text-center">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-              <AlertCircle className="w-8 h-8 text-blue-400" />
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl text-center">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto ${confirm.options?.type === 'error' ? 'bg-red-50' : 'bg-purple-50'}`}>
+              <AlertCircle className={`w-8 h-8 ${confirm.options?.type === 'error' ? 'text-[var(--primary)]' : 'text-[var(--secondary)]'}`} />
             </div>
-            <h3 className="text-lg font-black text-[#1F1939] mb-4 uppercase tracking-tight leading-tight">
+            <h3 className="text-xl font-black text-[#1F1939] mb-4 uppercase tracking-tight leading-tight">
               {confirm.options?.title || 'Bist du sicher?'}
             </h3>
-            <p className="text-sm text-[#4A4468] font-bold leading-relaxed mb-8">
+            <p className="text-sm text-[#4A4468] font-bold leading-relaxed mb-8 px-2">
               {confirm.message}
             </p>
             <div className="flex flex-col gap-3">
               <button 
                 onClick={handleConfirm} 
-                className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black text-sm uppercase tracking-widest shadow-md active:scale-95 transition-all hover:bg-blue-600"
+                className={`w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest shadow-md active:scale-95 transition-all ${
+                  confirm.options?.type === 'error' 
+                  ? 'bg-[var(--primary)] hover:bg-red-500' 
+                  : 'bg-[var(--secondary)] hover:bg-purple-500'
+                }`}
               >
                 {confirm.options?.confirmLabel || 'Ja, weiter'}
               </button>
               <button 
                 onClick={() => setConfirm(null)} 
-                className="w-full py-3 text-sm font-black text-blue-300 uppercase tracking-widest hover:text-blue-500 transition-colors"
+                className="w-full py-3 text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--text-main)] transition-colors"
               >
                 {confirm.options?.cancelLabel || 'Abbrechen'}
               </button>

@@ -64,19 +64,19 @@ function AppLayout({
       </main>
 
       {profile.onboarding_completed && (
-        <nav className="fixed bottom-6 left-6 right-6 h-16 bg-white border border-purple-100 rounded-[2rem] flex items-center justify-around px-2 z-[100] shadow-[0_10px_30px_rgba(0,0,0,0.05)] max-w-md mx-auto" style={{ bottom: 'calc(1.5rem + var(--sab))' }}>
-          <NavLink to="/dashboard" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
+        <nav className="nav-dock">
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
             <Home className="w-6 h-6" />
           </NavLink>
 
           {profile.partner_id ? (
-            <NavLink to="/questions" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
+            <NavLink to="/questions" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
               <MessageCircle className="w-6 h-6" />
             </NavLink>
           ) : (
             <div 
               onClick={() => setShowLockedModal(true)}
-              className="p-3 opacity-40 cursor-pointer relative text-purple-200"
+              className="nav-item opacity-40 cursor-pointer relative"
             >
               <MessageCircle className="w-6 h-6" />
               <div className="absolute top-2 right-2 bg-white rounded-full p-0.5 shadow-sm">
@@ -85,7 +85,7 @@ function AppLayout({
             </div>
           )}
 
-          <NavLink to="/profile" className={({ isActive }) => `p-3 transition-all duration-300 ${isActive ? 'text-[var(--secondary)]' : 'text-purple-200'}`}>
+          <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
             <UserIcon className="w-6 h-6" />
           </NavLink>
         </nav>
@@ -94,16 +94,16 @@ function AppLayout({
       {showLockedModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowLockedModal(false)} />
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl text-center">
             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <Lock className="w-8 h-8 text-[var(--primary)]" />
             </div>
-            <h3 className="text-xl font-bold text-[#1F1939] mb-4">Bereich gesperrt</h3>
-            <p className="text-sm text-[#4A4468] leading-relaxed mb-8">
-              Du kannst den Fragenbereich<br />nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.<br /><br />✨ Verknüpfe dich dazu im Profil-Tab.
+            <h3 className="text-xl font-black text-[#1F1939] mb-4 tracking-tight">Bereich gesperrt</h3>
+            <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-8 px-4">
+              Du kannst den Fragenbereich nur mit einem <span className="font-bold text-[var(--secondary)]">Bisou-Partner</span> öffnen.
             </p>
-            <button onClick={() => { setShowLockedModal(false); navigate('/profile'); }} className="btn-action">Zum Profil ✨</button>
-            <button onClick={() => setShowLockedModal(false)} className="w-full mt-4 text-sm font-bold text-[var(--muted)] hover:text-[#1F1939] transition-colors">Schließen</button>
+            <button onClick={() => { setShowLockedModal(false); navigate('/profile'); }} className="btn-action py-4 text-base font-black">Zum Profil ✨</button>
+            <button onClick={() => setShowLockedModal(false)} className="w-full mt-4 text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[#1F1939] transition-colors py-2">Schließen</button>
           </div>
         </div>
       )}
@@ -186,10 +186,13 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(s);
-        if (s) fetchProfile(s.user.id);
-      } else if (event === 'SIGNED_OUT') {
+        if (s) {
+          setSession(s);
+          fetchProfile(s.user.id);
+        }
+      } else if (event === 'SIGNED_OUT' || (event === 'USER_UPDATED' && !s)) {
         setSession(null);
         setProfile(null);
         setPartnerProfile(null);
@@ -203,11 +206,23 @@ export default function App() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      
+      // Clear local state immediately for a snappier feel
       setSession(null);
       setProfile(null);
       setPartnerProfile(null);
       setDashboardData(null);
+
+      // Perform signOut, but don't let it block indefinitely
+      try {
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+        ]);
+      } catch (e) {
+        console.warn("Sign out call timed out or failed, but continuing with local logout.");
+      }
+
       navigate('/signin', { replace: true });
     } catch (err) {
       console.error("Logout-Fehler:", err);

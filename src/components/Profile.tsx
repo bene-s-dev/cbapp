@@ -233,7 +233,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         <header className="flex flex-col items-center mb-8 relative pt-14">
           <button 
             onClick={onLogout} 
-            className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-red-400 shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
+            className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
             title="Abmelden"
           >
             <LogOut className="w-5 h-5" />
@@ -243,29 +243,29 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
                 <input type="file" id="avatar-upload" accept="image/*" className="hidden" onChange={handleFileSelect} />
-                <div className="w-20 h-20 rounded-[2rem] bg-white border-2 border-blue-100 flex items-center justify-center overflow-hidden transition-all relative shadow-sm hover:border-blue-300">
-                  {profile?.avatar_url ? (<img src={profile.avatar_url} alt="P" className="w-full h-full object-cover" />) : (<Camera className="w-8 h-8 text-blue-200" />)}
-                  {loading && (<div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10"><div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div></div>)}
+                <div className="w-24 h-24 rounded-[2.5rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden transition-all relative shadow-md hover:scale-105 active:scale-95">
+                  {profile?.avatar_url ? (<img src={profile.avatar_url} alt="P" className="w-full h-full object-cover" />) : (<Camera className="w-8 h-8 text-purple-200" />)}
+                  {loading && (<div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10"><div className="w-4 h-4 border-2 border-[var(--secondary)] border-t-transparent rounded-full animate-spin"></div></div>)}
                 </div>
               </div>
               <button 
                 onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}
-                className="absolute -right-1 bottom-0.5 p-1.5 rounded-full bg-white border-2 border-blue-50 text-blue-400 shadow-md active:scale-90 hover:border-blue-100 hover:text-blue-500 transition-all z-30"
+                className="absolute -right-1 bottom-0.5 p-2 rounded-full bg-white border-2 border-white text-[var(--secondary)] shadow-md active:scale-90 hover:text-purple-600 transition-all z-30"
               >
-                <Pencil className="w-3 h-3" />
+                <Pencil className="w-3.5 h-3.5" />
               </button>
             </div>
             
-            <div className="mt-3 flex flex-col items-center gap-0.5">
+            <div className="mt-4 flex flex-col items-center gap-0.5">
               {isEditingName ? (
                 <div className="flex items-center gap-1">
-                  <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="text-sm font-black text-[var(--text-main)] bg-blue-50 border-b-2 border-blue-400 outline-none text-center py-1 w-[120px]" autoFocus onBlur={handleUpdateName} onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()} />
+                  <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="text-base font-black text-[var(--text-main)] bg-purple-50/50 border-b-2 border-[var(--secondary)] outline-none text-center py-1 w-[140px]" autoFocus onBlur={handleUpdateName} onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()} />
                   <button onClick={handleUpdateName} className="text-[var(--accent-green)] p-1"><Check className="w-5 h-5" /></button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 group cursor-pointer bg-white/50 px-4 py-1.5 rounded-full border border-transparent hover:border-blue-100 transition-all" onClick={() => setIsEditingName(true)}>
-                  <span className="text-[15px] font-black text-[var(--text-main)] uppercase tracking-[0.1em]">{profile?.display_name || 'User'}</span>
-                  <Pencil className="w-4 h-4 text-blue-400 group-hover:text-blue-500 transition-colors" />
+                <div className="flex items-center gap-2 group cursor-pointer px-4 py-1.5 rounded-full hover:bg-purple-50/50 transition-all" onClick={() => setIsEditingName(true)}>
+                  <span className="text-lg font-black text-[var(--text-main)] uppercase tracking-[0.1em]">{profile?.display_name || 'User'}</span>
+                  <Pencil className="w-4 h-4 text-purple-300 group-hover:text-[var(--secondary)] transition-colors" />
                 </div>
               )}
             </div>
@@ -276,39 +276,41 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
           {profile?.partner_id ? (
-            <div className="bg-white rounded-[2rem] border border-blue-100 shadow-sm p-6 flex flex-col items-center justify-center gap-4 text-center">
+            <div className="status-box p-6 flex flex-col items-center justify-center gap-4 text-center">
               <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Mein Bisou-Partner:</span>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="font-black text-2xl text-blue-900 tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
-                  <Heart className="w-6 h-6 text-pink-400 fill-pink-400" />
+                <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">Mein Bisou-Partner:</span>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="font-black text-2xl text-[var(--text-main)] tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
+                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shadow-sm">
+                    <Heart className="w-4 h-4 text-[var(--primary)] fill-current" />
+                  </div>
                 </div>
               </div>
               
               <button 
                 onClick={handleUnlinkPartner} 
                 disabled={isLinking}
-                className="mt-3 text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors cursor-pointer active:scale-95"
+                className="mt-2 text-[10px] font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors cursor-pointer active:scale-95 uppercase tracking-widest"
               >
-                Partner auf Bisou entkoppeln
+                Partner-Verknüpfung aufheben
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-[2rem] border border-blue-100 shadow-sm p-5 flex flex-col gap-6">
+            <div className="status-box p-6 flex flex-col gap-6">
               <div className="text-center">
-                <span className="text-[11px] font-bold text-gray-400">Noch kein Bisou-Partner verknüpft.</span>
+                <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider">Noch kein Partner verknüpft</span>
               </div>
               
               {/* Oberer Teil: Mein Code */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest ml-1">Mein Bisou-Code</span>
+              <div className="flex flex-col gap-2">
+                <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] ml-1">Mein Bisou-Code</span>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-blue-50/50 border border-blue-100 rounded-2xl h-12 flex items-center justify-center font-mono font-black text-[15px] text-blue-900 tracking-widest">
+                  <div className="flex-1 bg-purple-50/30 border-2 border-[var(--card-border)] rounded-2xl h-14 flex items-center justify-center font-mono font-black text-lg text-[var(--text-main)] tracking-[0.2em] shadow-sm">
                     {profile?.partner_code || '...'}
                   </div>
                   <button 
                     onClick={handleShareCode}
-                    className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white border border-blue-200 rounded-2xl text-blue-500 active:scale-95 transition-all shadow-sm hover:border-blue-400 hover:bg-blue-50"
+                    className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-white border-2 border-[var(--card-border)] rounded-2xl text-[var(--secondary)] active:scale-95 transition-all shadow-sm hover:border-[var(--secondary)] hover:bg-purple-50"
                   >
                     <Share2 className="w-5 h-5" />
                   </button>
@@ -316,20 +318,20 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
 
               {/* Unterer Teil: Partnercode eintragen */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest ml-1">oder Partnercode eintragen:</span>
+              <div className="flex flex-col gap-2">
+                <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] ml-1">Partnercode eintragen:</span>
                 <div className="flex items-center gap-3">
                   <input 
                     type="text" 
-                    placeholder="Bisou-Code eingeben" 
+                    placeholder="CODE EINGEBEN" 
                     value={partnerCodeInput} 
                     onChange={(e) => setPartnerCodeInput(e.target.value)} 
-                    className="flex-1 bg-gray-50 border border-blue-100 rounded-2xl h-12 text-center font-mono font-black text-[15px] text-[var(--text-main)] outline-none focus:border-blue-400 focus:bg-white transition-colors placeholder:text-blue-200 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal uppercase"
+                    className="flex-1 bg-white border-2 border-[var(--card-border)] rounded-2xl h-14 text-center font-mono font-black text-lg text-[var(--text-main)] outline-none focus:border-[var(--secondary)] transition-colors placeholder:text-purple-200 placeholder:font-sans placeholder:text-[10px] placeholder:tracking-widest uppercase shadow-sm"
                   />
                   <button 
                     onClick={handleLinkPartner} 
                     disabled={!partnerCodeInput || isLinking} 
-                    className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-blue-500 text-white rounded-2xl shadow-md active:scale-95 transition-all hover:bg-blue-600 disabled:opacity-50 disabled:bg-gray-300 disabled:shadow-none"
+                    className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-[var(--secondary)] text-white rounded-2xl shadow-md active:scale-95 transition-all hover:bg-purple-500 disabled:opacity-30 disabled:grayscale"
                   >
                     <Check className="w-6 h-6" />
                   </button>
@@ -339,17 +341,66 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           )}
 
           {/* App Nutzung Box */}
-          <div className="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-sm flex flex-col items-center justify-center">
-            <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">App Nutzung:</span>
+          <div className="status-box p-6 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)] border border-purple-100">
+              <Download className="w-6 h-6" />
+            </div>
+            <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-2">App Nutzung</span>
+            
             {isDesktop ? (
-              <span className="font-bold text-[10px] text-blue-500 uppercase tracking-wider mt-1 text-center">
-                Installation nur auf Mobilgeräten
-              </span>
+              <p className="text-xs font-bold text-[var(--muted)] leading-relaxed px-4">
+                Installation auf Mobilgeräten empfohlen für das beste Erlebnis.
+              </p>
             ) : isStandalone ? (
-              <span className="font-black text-[15px] text-blue-900 tracking-tight flex items-center gap-2">✨ Installiert</span>
+              <div className="flex items-center gap-2 py-2 px-6 bg-green-50 rounded-full border border-green-100 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-[var(--accent-green)] animate-pulse" />
+                <span className="font-black text-[11px] text-[var(--accent-green)] uppercase tracking-widest">Als App installiert</span>
+              </div>
             ) : (
-              <button onClick={() => setShowInstallModal(true)} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">Bisou-App installieren</button>
+              <>
+                <p className="text-xs text-[var(--muted)] font-bold mb-5 leading-relaxed">Installiere Bisou für schnellen Zugriff und tägliche Küsse:</p>
+                <button 
+                  onClick={() => setShowInstallModal(true)} 
+                  className="btn-secondary py-3 px-8 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2"
+                >
+                  Jetzt installieren ✨
+                </button>
+              </>
             )}
+          </div>
+
+          <div className="pt-6 flex justify-center">
+            <button 
+              onClick={() => {
+                showConfirm(
+                  "Möchtest du deinen Bisou-Account wirklich unwiderruflich löschen? Alle deine Daten und Antworten werden dabei für immer entfernt. Dies kann nicht rückgängig gemacht werden.",
+                  async () => {
+                    try {
+                      setLoading(true);
+                      // Delete profile (will cascade to answers)
+                      const { error } = await supabase.from('profiles').delete().eq('id', profile.id);
+                      if (error) throw error;
+                      
+                      // Use the passed onLogout handler for a clean exit
+                      onLogout();
+                    } catch (err) {
+                      showAlert("Fehler beim Löschen des Accounts.", "error");
+                    } finally {
+                      setLoading(false);
+                    }
+                  },
+                  { 
+                    title: "Account löschen?", 
+                    confirmLabel: "Ja, Account löschen", 
+                    cancelLabel: "Abbrechen",
+                    type: 'error'
+                  }
+                );
+              }}
+              className="text-[10px] font-black text-red-300 uppercase tracking-[0.2em] hover:text-red-500 transition-colors py-2 underline"
+            >
+              Account löschen
+            </button>
           </div>
         </div>
       </div>

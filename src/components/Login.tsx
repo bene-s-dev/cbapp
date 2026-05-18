@@ -105,9 +105,10 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-[100dvh] w-full max-w-md mx-auto animate-entrance px-4 relative overflow-hidden">
+    <div className="flex flex-col h-[100svh] w-full max-w-md mx-auto animate-entrance px-4 relative overflow-hidden">
       
-      <div className="relative z-10 w-full flex flex-col items-center justify-center">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
         {mode === 'login' && (
           <div className="text-center mb-8 select-none w-full">
             <h1 className="text-7xl font-semibold text-[var(--text-main)] mb-6 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
@@ -193,7 +194,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
               {regStep === 1 && (
                 <div className="space-y-4">
                   <div className="text-center mb-6">
-                    <h2 className="text-3xl font-bold text-[var(--text-main)] mb-2">Willkommen! ✨</h2>
+                    <h2 className="text-3xl font-bold text-[var(--text-main)] mb-2">Willkommen bei Bisou! ✨</h2>
                   </div>
                   <div className="space-y-3">
                     <input type="text" className="input-base" placeholder="Dein Vorname" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
@@ -223,7 +224,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       </div>
                       <label className="flex items-center gap-3 p-4 rounded-2xl border-2 border-purple-50 bg-white cursor-pointer hover:border-[var(--secondary)] transition-all">
                         <input type="checkbox" className="w-5 h-5 rounded-md accent-[var(--secondary)]" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} />
-                        <span className="text-xs font-bold text-[var(--text)] text-left">Ich habe die Datenschutzhinweise gelesen.</span>
+                        <span className="text-xs font-bold text-[var(--text)] text-left">Bene gibt sich Mühe meine Daten zu schützen.</span>
                       </label>
                       <div className="space-y-3">
                         <button disabled={!privacyAccepted || loading} onClick={handleRegisterFinal} className="btn-action">{loading ? 'Wird erstellt...' : 'Konto erstellen ✨'}</button>
@@ -244,47 +245,48 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                   setMode('forgot');
                   setMessage(null);
                 }} 
-                className="text-[var(--muted)] text-sm font-bold hover:text-[var(--text-main)] transition-colors"
+                className="text-[var(--muted)] text-[10px] font-black uppercase tracking-widest hover:text-[var(--text-main)] transition-colors"
               >
                 Passwort vergessen?
               </button>
             </div>
           )}
         </div>
-
-        <footer className="absolute bottom-4 left-0 w-full text-center">
-          <p className="text-[10px] font-bold text-[var(--muted)] opacity-50">
-            Bisou-App v.01<br />
-            <a 
-              href="https://github.com/bene-s-dev" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="underline hover:text-[var(--secondary)] transition-colors"
-            >
-              Benedikt S.
-            </a> &copy; 2026
-          </p>
-          <div className="flex justify-center gap-4 mt-1">
-            <button 
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-[10px] font-bold text-[var(--muted)] opacity-50 underline"
-            >
-              Datenschutz
-            </button>
-            <button 
-              onClick={() => setShowImpressumModal(true)}
-              className="text-[10px] font-bold text-[var(--muted)] opacity-50 underline"
-            >
-              Impressum
-            </button>
-          </div>
-        </footer>
       </div>
+
+      {/* Footer Area */}
+      <footer className="pb-8 pt-4 w-full text-center z-10">
+        <p className="text-[10px] font-bold text-[var(--muted)] opacity-50">
+          Bisou-App v.01<br />
+          <a 
+            href="https://github.com/bene-s-dev" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline hover:text-[var(--secondary)] transition-colors"
+          >
+            Benedikt S.
+          </a> &copy; 2026
+        </p>
+        <div className="flex justify-center gap-6 mt-2">
+          <button 
+            onClick={() => setShowPrivacyModal(true)}
+            className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-50 underline hover:opacity-100 transition-opacity"
+          >
+            Datenschutz
+          </button>
+          <button 
+            onClick={() => setShowImpressumModal(true)}
+            className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-50 underline hover:opacity-100 transition-opacity"
+          >
+            Impressum
+          </button>
+        </div>
+      </footer>
 
       {showPrivacyModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowPrivacyModal(false)} />
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center">
+          <div className="absolute inset-0 bg-transparent" onClick={() => setShowPrivacyModal(false)} />
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center shadow-2xl">
             <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <ShieldCheck className="w-8 h-8 text-[var(--secondary)]" />
             </div>
@@ -305,8 +307,8 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
       {showImpressumModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowImpressumModal(false)} />
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center">
+          <div className="absolute inset-0 bg-transparent" onClick={() => setShowImpressumModal(false)} />
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border border-purple-100 text-center shadow-2xl">
             <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <span className="text-3xl font-bold text-[var(--secondary)]">§</span>
             </div>

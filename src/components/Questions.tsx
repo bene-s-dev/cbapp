@@ -241,21 +241,21 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
                 <Sparkles className="w-3.5 h-3.5 flex-shrink-0 text-[var(--secondary)]" />
                 <span className="text-[11px] font-bold text-[#5A5478]">{q.h}</span>
               </div>
-              <h2 className="text-[1.35rem] font-bold mb-6 text-[#1F1939] leading-[1.25] shrink-0 tracking-tight">{q.q}</h2>
+              <h2 className="text-[1.5rem] font-black mb-6 text-[#1F1939] leading-[1.2] shrink-0 tracking-tight">{q.q}</h2>
               <div className="flex-1 flex flex-col min-h-0 pb-4">
                 {step === 0 && (
                   <div className="flex flex-col gap-3">
                     {(q.o || []).map((o, i) => (
-                      <button key={i} className={`p-6 rounded-[2rem] border-2 text-sm font-bold min-h-[80px] flex items-center justify-center transition-all ${selectedTot === o ? 'border-[var(--secondary)] bg-purple-50 text-[var(--secondary)]' : 'bg-white border-purple-50 text-[#4A4468]'}`} onClick={() => setSelectedTot(o)}>{o}</button>
+                      <button key={i} className={`p-6 rounded-[2rem] border-2 text-sm font-black min-h-[80px] flex items-center justify-center transition-all shadow-sm ${selectedTot === o ? 'border-[var(--secondary)] bg-purple-50 text-[var(--secondary)]' : 'bg-white border-[var(--card-border)] text-[#4A4468] hover:border-purple-300'}`} onClick={() => setSelectedTot(o)}>{o}</button>
                     ))}
                   </div>
                 )}
                 {step === 1 && (
                   <div ref={sortableRef} className="flex flex-col gap-3">
                     {rankingOptions.map((o, i) => (
-                      <div key={o} className="bg-white border-2 border-purple-50 p-4 rounded-[1.75rem] flex items-center gap-4 cursor-grab shadow-sm">
-                        <span className="w-7 h-7 rounded-full bg-purple-50 text-[var(--secondary)] flex items-center justify-center text-[11px] font-black">{i + 1}</span>
-                        <span className="font-bold text-[13px] text-[#2D264B] leading-snug line-clamp-2">{o}</span>
+                      <div key={o} className="bg-white border-2 border-[var(--card-border)] p-5 rounded-[2rem] flex items-center gap-4 cursor-grab shadow-sm active:scale-95 transition-all">
+                        <span className="w-8 h-8 rounded-full bg-purple-50 text-[var(--secondary)] flex items-center justify-center text-[12px] font-black">{i + 1}</span>
+                        <span className="font-black text-[14px] text-[#2D264B] leading-snug line-clamp-2">{o}</span>
                       </div>
                     ))}
                   </div>
@@ -263,7 +263,7 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
                 {step === 2 && (
                   <div className="flex-1 flex flex-col gap-2">
                     <textarea 
-                      className="w-full flex-1 min-h-[160px] p-6 rounded-[2rem] border-2 border-purple-50 bg-white text-sm font-bold leading-relaxed resize-none focus:border-[var(--secondary)] outline-none text-[#2D264B]" 
+                      className="w-full flex-1 min-h-[160px] p-6 rounded-[2rem] border-2 border-[var(--card-border)] bg-white text-base font-bold leading-relaxed resize-none focus:border-[var(--secondary)] outline-none text-[#2D264B] shadow-sm transition-all" 
                       placeholder="Deine Gedanken hier..." 
                       value={textVal} 
                       onChange={(e) => setTextVal(e.target.value)} 
@@ -280,8 +280,8 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
               </div>
             </div>
             <div className="pb-6 pt-4">
-              <button onClick={handleNext} disabled={isSubmitting || !((step === 0 && selectedTot) || (step === 1 && rankingOptions.length > 0) || (step === 2 && textVal.trim().length > 0))} className="btn-action py-4 shadow-lg disabled:opacity-40">
-                {isSubmitting ? 'Wird geteilt...' : (step === 2 ? 'Abschließen' : 'Weiter')}
+              <button onClick={handleNext} disabled={isSubmitting || !((step === 0 && selectedTot) || (step === 1 && rankingOptions.length > 0) || (step === 2 && textVal.trim().length > 0))} className="btn-action py-5 shadow-lg disabled:opacity-40 font-black text-lg">
+                {isSubmitting ? 'Wird geteilt...' : (step === 2 ? 'Abschließen ✨' : 'Weiter 🚀')}
               </button>
             </div>
           </div>
@@ -289,47 +289,48 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
           // --- RESULTS VIEW ---
           <div className="flex flex-col flex-1 h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto pr-1 pb-4">
-              <div className="flex items-center justify-between mb-6 bg-purple-50/50 p-4 rounded-[2rem] border border-purple-100">
+              <div className="flex items-center justify-between mb-8 bg-white p-5 rounded-[2rem] border-2 border-[var(--card-border)] shadow-sm">
                 <div className="flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-[var(--secondary)]" />
+                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-[var(--secondary)]" />
+                  </div>
                   <div>
-                    <h3 className="font-bold text-[#2D264B] text-xs">Unsere Gedanken</h3>
-                    <p className="text-[9px] text-[#8E89AA] font-medium tracking-tight">{partnerResults ? 'Ihr habt beide geantwortet! ✨' : `${partnerName} antwortet noch...`}</p>
+                    <h3 className="font-black text-[#2D264B] text-sm uppercase tracking-wider">Unsere Gedanken</h3>
+                    <p className="text-[10px] text-[#8E89AA] font-bold tracking-tight">{partnerResults ? 'Beide geantwortet! ✨' : `${partnerName} antwortet noch...`}</p>
                   </div>
                 </div>
-                <button onClick={resetQuiz} className="flex items-center gap-2 py-2.5 px-4 bg-white rounded-2xl border border-purple-100 shadow-sm active:scale-90 transition-all">
-                  <RefreshCcw className="w-3.5 h-3.5 text-[var(--secondary)]" />
-                  <span className="text-[10px] font-bold text-[var(--secondary)] uppercase tracking-wider">Neu starten</span>
+                <button onClick={resetQuiz} className="p-3 bg-purple-50 rounded-xl border border-purple-100 shadow-sm active:scale-90 transition-all group" title="Neu starten">
+                  <RefreshCcw className="w-4 h-4 text-[var(--secondary)] group-hover:rotate-180 transition-transform duration-500" />
                 </button>
               </div>
-              <div className="space-y-8 pb-10">
+              <div className="space-y-10 pb-10">
                 {dailyQs.map((question, i) => {
                   const m = myResults[i] || "—";
                   const p = partnerResults?.[i];
                   return (
                     <div key={i} className="animate-in fade-in slide-in-from-bottom-3 duration-500" style={{ animationDelay: `${i * 150}ms` }}>
-                      <div className="flex items-center gap-2 mb-3 px-1">
-                        <div className="w-6 h-6 rounded-lg bg-white border border-purple-50 flex items-center justify-center">
-                          {i === 0 && <ArrowRightLeft className="w-3 h-3 text-[var(--secondary)]" />}
-                          {i === 1 && <ListOrdered className="w-3 h-3 text-[var(--secondary)]" />}
-                          {i === 2 && <MessageCircle className="w-3 h-3 text-[var(--secondary)]" />}
+                      <div className="flex items-center gap-2 mb-4 px-1">
+                        <div className="w-7 h-7 rounded-lg bg-white border-2 border-[var(--card-border)] flex items-center justify-center shadow-sm">
+                          {i === 0 && <ArrowRightLeft className="w-4 h-4 text-[var(--secondary)]" />}
+                          {i === 1 && <ListOrdered className="w-4 h-4 text-[var(--secondary)]" />}
+                          {i === 2 && <MessageCircle className="w-4 h-4 text-[var(--secondary)]" />}
                         </div>
-                        <span className="text-[10px] font-bold text-[#8E89AA] uppercase tracking-wider">{question?.q || "Frage"}</span>
+                        <span className="text-[10px] font-black text-[#8E89AA] uppercase tracking-[0.2em]">{question?.q || "Frage"}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="res-bubble p-4 min-h-[110px] flex flex-col rounded-[2rem]">
-                          <span className="text-[8px] font-black text-[var(--secondary)] mb-2 uppercase tracking-widest">ICH</span>
-                          <p className="text-[11px] font-bold text-[#2D264B] leading-relaxed break-words">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="res-bubble p-5 min-h-[120px] flex flex-col rounded-[2.25rem] border-2 border-[var(--card-border)] bg-white shadow-sm">
+                          <span className="text-[9px] font-black text-[var(--secondary)] mb-3 uppercase tracking-[0.2em]">ICH</span>
+                          <p className="text-xs font-bold text-[#2D264B] leading-relaxed break-words">
                             {i === 1 ? safeSplit(m, " > ").map((it, idx) => (<span key={idx} className="block">{idx + 1}. {it}</span>)) : m}
                           </p>
                         </div>
-                        <div className={`res-bubble p-4 min-h-[110px] flex flex-col rounded-[2rem] ${!p ? 'bg-purple-50/30 border-dashed opacity-60' : ''}`}>
-                          <span className="text-[8px] font-black text-[#8E89AA] mb-2 uppercase tracking-widest">{partnerName.toUpperCase()}</span>
+                        <div className={`res-bubble p-5 min-h-[120px] flex flex-col rounded-[2.25rem] border-2 border-[var(--card-border)] bg-white shadow-sm ${!p ? 'bg-purple-50/20 border-dashed border-purple-100 opacity-60' : ''}`}>
+                          <span className="text-[9px] font-black text-[#8E89AA] mb-3 uppercase tracking-[0.2em]">{partnerName.toUpperCase()}</span>
                           {p ? (
-                            <p className="text-[11px] font-bold text-[#2D264B] leading-relaxed break-words">
+                            <p className="text-xs font-bold text-[#2D264B] leading-relaxed break-words">
                               {i === 1 ? safeSplit(p, " > ").map((it, idx) => (<span key={idx} className="block">{idx + 1}. {it}</span>)) : p}
                             </p>
-                          ) : <p className="text-[10px] font-bold text-purple-300 italic">Noch offen...</p>}
+                          ) : <p className="text-[10px] font-black text-purple-200 italic mt-auto">Wartet...</p>}
                         </div>
                       </div>
                     </div>

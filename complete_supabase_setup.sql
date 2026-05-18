@@ -45,11 +45,14 @@ DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.p
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can view their partner's profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
 
 CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can delete their own profile" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can view their own answers" ON public.answers;
 DROP POLICY IF EXISTS "Users can view their partner's answers" ON public.answers;
