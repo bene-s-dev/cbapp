@@ -196,8 +196,18 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-visible">
-        {/* Header with Avatar and Name */}
+        {/* Header with Avatar, Name and Logout Button */}
         <header className="flex flex-col items-center mb-8 relative pt-1">
+          
+          {/* Runder Abmelde-Button oben rechts */}
+          <button 
+            onClick={onLogout} 
+            className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-red-400 shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
+            title="Abmelden"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+
           <div className="flex flex-col items-center">
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
@@ -284,11 +294,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               )}
             </div>
           </div>
-        </div>
-
-        {/* Logout Button */}
-        <div className="mt-auto pb-6 pt-4 w-full relative z-20">
-          <button onClick={onLogout} className="w-full p-4 rounded-[22px] border-2 border-red-50 text-red-400 font-bold flex items-center justify-center gap-2 bg-white text-[10px] uppercase tracking-widest transition-all active:scale-95 hover:text-red-600 hover:border-red-100 shadow-sm"><LogOut className="w-3.5 h-3.5" />Abmelden</button>
         </div>
       </div>
 
