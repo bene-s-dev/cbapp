@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, Question } from '../constants/questions';
-import { Users, Lock, Heart as HeartIcon, Clock } from 'lucide-react';
+import { Users, Lock, Heart as HeartIcon, Clock, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDailyKey, getTimeUntilReset } from '../lib/dateUtils';
 import { useDialog } from './DialogProvider';

@@ -130,7 +130,9 @@ export default function App() {
       ]);
 
       const qData = questionsRes.data?.questions;
-      const currentQs = qData ? [qData.tot, qData.ranking, qData.text] : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
+      const currentQs = (qData && qData.tot && qData.ranking && qData.text) 
+        ? [qData.tot, qData.ranking, qData.text] 
+        : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
 
       if (profileRes.error) throw profileRes.error;
       let data = profileRes.data;
