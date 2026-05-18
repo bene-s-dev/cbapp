@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2 } from 'lucide-react';
+import { Camera, Copy, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2 } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
@@ -150,6 +150,24 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      showAlert("Code kopiert! ✨", "success");
+    } catch (err) {
+      showAlert("Fehler beim Kopieren", "error");
+    }
+    document.body.removeChild(textArea);
+  };
+
   const handleShareCode = async () => {
     if (!profile?.partner_code) return;
     
@@ -165,9 +183,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         console.log('Teilen abgebrochen oder fehlgeschlagen', err);
       }
     } else {
-      // Fallback, falls die Web Share API nicht unterstützt wird
-      navigator.clipboard.writeText(profile.partner_code);
-      showAlert("Code kopiert! ✨", "success");
+      copyToClipboard(profile.partner_code);
     }
   };
 
@@ -231,14 +247,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
 
       <div className="flex-1 flex flex-col w-full overflow-hidden">
         <header className="flex flex-col items-center mb-6 relative pt-14 shrink-0">
-          <button 
-            onClick={onLogout} 
-            className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
-            title="Abmelden"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-
           <div className="flex flex-col items-center">
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
@@ -305,12 +313,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] ml-1">Mein Bisou-Code</span>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 relative group overflow-hidden rounded-2xl">
-                    <div className="bg-purple-50/30 border-2 border-[var(--card-border)] h-12 flex items-center justify-center font-mono font-black text-base text-[var(--text-main)] tracking-[0.2em] shadow-sm">
+                  <div className="flex-1 relative group rounded-2xl border-2 border-[var(--card-border)] bg-purple-50/30 overflow-hidden shadow-sm">
+                    <div className="h-12 flex items-center justify-center font-mono font-black text-base text-[var(--text-main)] tracking-[0.2em]">
                       {profile?.partner_code || '...'}
                     </div>
                     <button 
-                      onClick={() => { navigator.clipboard.writeText(profile?.partner_code); showAlert("Code kopiert! ✨", "success"); }}
+                      onClick={() => copyToClipboard(profile?.partner_code)}
                       className="absolute right-1 top-1 bottom-1 w-10 flex items-center justify-center bg-white/50 hover:bg-white rounded-xl text-[var(--secondary)] active:scale-95 transition-all"
                     >
                       <Copy className="w-3.5 h-3.5" />

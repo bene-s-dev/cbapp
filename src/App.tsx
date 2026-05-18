@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Home, MessageCircle, User as UserIcon, Lock } from 'lucide-react';
+import { Home, MessageCircle, User as UserIcon, Lock, LogOut } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -22,13 +22,15 @@ function AppLayout({
   profile, 
   partnerProfile,
   showLockedModal,
-  setShowLockedModal 
+  setShowLockedModal,
+  onLogout
 }: { 
   children: React.ReactNode; 
   profile: any; 
   partnerProfile: any;
   showLockedModal: boolean;
   setShowLockedModal: (val: boolean) => void;
+  onLogout: () => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,10 +47,17 @@ function AppLayout({
       
       {profile.onboarding_completed && showHeader && (
         <header className="px-4 z-20 absolute left-0 right-0 top-0 max-w-md mx-auto w-full pointer-events-none" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
-          <div className="flex items-start justify-start min-h-[40px]">
+          <div className="flex items-start justify-between min-h-[40px]">
             <h1 className="text-2xl font-semibold text-[var(--text-main)] tracking-tight select-none pointer-events-auto" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
+            <button 
+              onClick={onLogout} 
+              className="p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 pointer-events-auto"
+              title="Abmelden"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
       )}
@@ -257,7 +266,7 @@ export default function App() {
         
         {session && profile ? (
           <Route path="*" element={
-            <AppLayout profile={profile} partnerProfile={partnerProfile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal}>
+            <AppLayout profile={profile} partnerProfile={partnerProfile} showLockedModal={showLockedModal} setShowLockedModal={setShowLockedModal} onLogout={handleLogout}>
               <Routes>
                 <Route path="/onboarding" element={<Onboarding onComplete={handleOnboardingComplete} />} />
                 <Route path="/dashboard" element={<Dashboard 
