@@ -205,3 +205,69 @@ serve(async (req) => {
   }
 })
 */
+
+-- STREAKS
+CREATE TABLE IF NOT EXISTS public.streaks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  current_streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_answer_date DATE,
+  streak_history JSONB DEFAULT '[]'::jsonb, -- Array of dates where the streak was active
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id)
+);
+
+ALTER TABLE public.streaks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own streak" ON public.streaks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can view their partner's streak" ON public.streaks FOR SELECT USING (user_id IN (SELECT partner_id FROM public.profiles WHERE id = auth.uid()));
+
+-- Function to update streak on answer
+CREATE OR REPLACE FUNCTION public.update_streak()
+RETURNS TRIGGER AS $$
+DECLARE
+    today DATE;
+    yesterday DATE;
+    current_s INTEGER;
+    last_d DATE;
+BEGIN
+    today := NEW.day_key;
+    yesterday := today - INTERVAL '1 day';
+    
+    SELECT current_streak, last_answer_date INTO current_s, last_d
+    FROM public.streaks
+    WHERE user_id = NEW.user_id;
+    
+    IF NOT FOUND THEN
+        INSERT INTO public.streaks (user_id, current_streak, longest_streak, last_answer_date, streak_history)
+        VALUES (NEW.user_id, 1, 1, today, jsonb_build_array(today));
+    ELSE
+        IF last_d = today THEN
+            -- Already answered today, do nothing
+            RETURN NEW;
+        ELSIF last_d = yesterday THEN
+            -- Continued streak
+            UPDATE public.streaks
+            SET current_streak = current_s + 1,
+                longest_streak = GREATEST(longest_streak, current_s + 1),
+                last_answer_date = today,
+                streak_history = streak_history || jsonb_build_array(today)
+            WHERE user_id = NEW.user_id;
+        ELSE
+            -- Streak broken
+            UPDATE public.streaks
+            SET current_streak = 1,
+                last_answer_date = today,
+                streak_history = jsonb_build_array(today)
+            WHERE user_id = NEW.user_id;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_answer_update_streak
+  AFTER INSERT ON public.answers
+  FOR EACH ROW EXECUTE FUNCTION public.update_streak();

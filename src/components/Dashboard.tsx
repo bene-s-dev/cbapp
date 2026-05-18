@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, Question } from '../constants/questions';
-import { Users, Lock, Heart as HeartIcon, Clock, Sparkles } from 'lucide-react';
+import { Users, Lock, Heart as HeartIcon, Clock, Sparkles, Flame, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDailyKey, getTimeUntilReset } from '../lib/dateUtils';
 import { useDialog } from './DialogProvider';
@@ -16,6 +16,72 @@ interface DashboardProps {
   onStartQuestions: () => void;
 }
 
+function StreakModal({ isOpen, onClose, streakData, partnerName }: { isOpen: boolean, onClose: () => void, streakData: any, partnerName: string }) {
+  const [viewDate, setViewDate] = useState(new Date());
+  
+  if (!isOpen) return null;
+
+  const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+  const monthName = viewDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
+
+  const history = streakData?.streak_history || [];
+  
+  const isDateActive = (day: number) => {
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+    const dateStr = d.toISOString().split('T')[0];
+    return history.includes(dateStr);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-[#2D264B]/60 backdrop-blur-md" onClick={onClose} />
+      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+              <Flame className="w-7 h-7 text-orange-500 fill-orange-500" />
+            </div>
+            <div>
+              <h3 className="font-black text-[#1F1939] text-lg leading-tight">Streak Übersicht</h3>
+              <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-widest">{streakData?.current_streak || 0} Tage Flamme</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 bg-purple-50 rounded-full text-[var(--muted)]"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex items-center justify-between mb-6 px-2">
+          <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))} className="p-2"><ChevronLeft className="w-5 h-5" /></button>
+          <span className="font-black text-xs uppercase tracking-widest text-[#1F1939]">{monthName}</span>
+          <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))} className="p-2"><ChevronRight className="w-5 h-5" /></button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 mb-8">
+          {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+            <div key={d} className="text-[9px] font-black text-[#8E89AA] text-center mb-2">{d}</div>
+          ))}
+          {Array.from({ length: (firstDayOfMonth + 6) % 7 }).map((_, i) => <div key={`empty-${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const active = isDateActive(day);
+            return (
+              <div key={day} className={`aspect-square rounded-xl flex items-center justify-center relative transition-all ${active ? 'bg-orange-50 border-2 border-orange-100' : 'bg-gray-50 border-2 border-transparent'}`}>
+                <span className={`text-[10px] font-black ${active ? 'text-orange-500' : 'text-[#8E89AA]'}`}>{day}</span>
+                {active && <Flame className="w-2 h-2 text-orange-500 fill-orange-500 absolute -top-1 -right-1" />}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="bg-purple-50 rounded-3xl p-6 text-center border-2 border-purple-100">
+          <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-1">Längster Streak</p>
+          <p className="text-2xl font-black text-[var(--secondary)]">{streakData?.longest_streak || 0} TAGE</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard({ 
   userName, 
   userAvatar, 
@@ -28,6 +94,7 @@ export default function Dashboard({
   const { showAlert, showConfirm } = useDialog();
   const [showComparison, setShowComparison] = useState(false);
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [showStreakModal, setShowStreakModal] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const dayKey = getDailyKey();
@@ -47,17 +114,23 @@ export default function Dashboard({
     return GREETINGS[seed % GREETINGS.length];
   }, [dayKey]);
 
-  const { meAnswered, partnerAnswered, myAnswers, partnerAnswers, dailyQs } = useMemo(() => {
-    if (!dashboardData) return { meAnswered: false, partnerAnswered: false, myAnswers: [], partnerAnswers: [], dailyQs: [] };
-    const { answers, questions } = dashboardData;
+  const { meAnswered, partnerAnswered, myAnswers, partnerAnswers, dailyQs, myStreak, partnerStreak } = useMemo(() => {
+    if (!dashboardData) return { meAnswered: false, partnerAnswered: false, myAnswers: [], partnerAnswers: [], dailyQs: [], myStreak: null, partnerStreak: null };
+    const { answers, questions, streaks } = dashboardData;
     const me = answers.find((a: any) => a.user_id !== partnerId);
     const other = partnerId ? answers.find((a: any) => a.user_id === partnerId) : null;
+    
+    const myS = streaks?.find((s: any) => s.user_id !== partnerId);
+    const pS = partnerId ? streaks?.find((s: any) => s.user_id === partnerId) : null;
+
     return {
       meAnswered: !!me,
       partnerAnswered: !!other,
       myAnswers: me ? me.choice.split(" [")[0].split(" | ") : [],
       partnerAnswers: other ? other.choice.split(" [")[0].split(" | ") : null,
-      dailyQs: questions as Question[]
+      dailyQs: questions as Question[],
+      myStreak: myS,
+      partnerStreak: pS
     };
   }, [dashboardData, partnerId]);
 
@@ -137,23 +210,37 @@ export default function Dashboard({
   return (
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
       <div className="flex-1 flex flex-col">
-        {/* Avatars Section */}
-        <div className="relative h-[110px] mb-10 pointer-events-none">
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-start pointer-events-auto mt-4">
-            {/* Partner Avatar & Name (Left & Front) */}
+        {/* Avatars & Streaks Section */}
+        <div className="relative h-[150px] mb-10">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-start mt-4">
+            {/* Partner Avatar & Name */}
             <div className="flex flex-col items-center relative z-20">
-              <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+              <div className="relative">
+                <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
+                  {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+                </div>
+                {hasPartner && (
+                  <button onClick={() => setShowStreakModal('partner')} className="absolute -top-2 -left-2 bg-white rounded-2xl p-2 border-2 border-purple-50 shadow-sm flex items-center gap-1.5 active:scale-90 transition-transform">
+                    <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
+                    <span className="text-[10px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
+                  </button>
+                )}
               </div>
               <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
                 {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
               </span>
             </div>
 
-            {/* My Avatar & Name (Right & Back) */}
+            {/* My Avatar & Name */}
             <div className="flex flex-col items-center relative z-10 -ml-6">
-              <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
-                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+              <div className="relative">
+                <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
+                  {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
+                </div>
+                <button onClick={() => setShowStreakModal('me')} className="absolute -top-2 -right-2 bg-white rounded-2xl p-2 border-2 border-purple-50 shadow-sm flex items-center gap-1.5 active:scale-90 transition-transform">
+                  <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
+                  <span className="text-[10px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
+                </button>
               </div>
               <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
                 {userName.split(' ')[0]}
@@ -228,6 +315,13 @@ export default function Dashboard({
           {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
       </div>
+
+      <StreakModal 
+        isOpen={!!showStreakModal} 
+        onClose={() => setShowStreakModal(null)} 
+        streakData={showStreakModal === 'me' ? myStreak : partnerStreak}
+        partnerName={partnerName}
+      />
     </div>
   );
 }

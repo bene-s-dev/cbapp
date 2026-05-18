@@ -10,10 +10,11 @@ interface QuestionsProps {
   userName: string;
   partnerName: string;
   partnerId?: string | null;
+  dashboardData?: any;
   onComplete: () => void;
 }
 
-export default function Questions({ userName, partnerName, partnerId, onComplete }: QuestionsProps) {
+export default function Questions({ userName, partnerName, partnerId, dashboardData, onComplete }: QuestionsProps) {
   const { showAlert, showConfirm } = useDialog();
   // --- STATE ---
   const [step, setStep] = useState<number>(0); 
@@ -42,6 +43,33 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
     }
   };
 
+  // Sync with live dashboardData from App.tsx
+  useEffect(() => {
+    if (dashboardData?.answers && partnerId) {
+      const pAnsObj = dashboardData.answers.find((a: any) => a.user_id === partnerId);
+      if (pAnsObj) {
+        const pMainPart = String(pAnsObj.choice || '').split(" [")[0];
+        setPartnerResults(safeSplit(pMainPart, " | "));
+      } else {
+        setPartnerResults(null);
+      }
+      
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          const myAnsObj = dashboardData.answers.find((a: any) => a.user_id === session.user.id);
+          if (myAnsObj && step < 3) {
+            const mainPart = String(myAnsObj.choice || '').split(" [")[0];
+            const parts = safeSplit(mainPart, " | ");
+            if (parts.length >= 3) {
+              setMyResults(parts);
+              setStep(3);
+            }
+          }
+        }
+      });
+    }
+  }, [dashboardData, partnerId]);
+
   // --- DATA LOADING ---
   const loadData = useCallback(async (forceRefresh = false) => {
     try {
@@ -58,7 +86,7 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
         }
       }
 
-      // 2. Fetch Answers
+      // 2. Fetch Answers (initial load, then sync takes over)
       const userIds = [session.user.id];
       if (partnerId) userIds.push(partnerId);
       const { data: answers } = await supabase.from('answers').select('*').in('user_id', userIds).eq('day_key', dayKey);
@@ -139,6 +167,12 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
       const { error } = await supabase.from('answers').insert([{ user_id: session.user.id, choice: choiceStr, day_key: dayKey }]);
       if (error && error.code !== '23505') throw error;
       
+      // Update local streak for immediate feedback if dashboardData isn't instant
+      if (dashboardData?.streaks) {
+        const myS = dashboardData.streaks.find((s: any) => s.user_id === session.user.id);
+        if (myS) myS.current_streak = (myS.current_streak || 0) + 1;
+      }
+
       setMyResults(finalResults);
       setStep(3);
       // Delayed notification to parent to prevent sync render issues
@@ -288,22 +322,8 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
         ) : (
           // --- RESULTS VIEW ---
           <div className="flex flex-col flex-1 h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto pr-1 pb-4">
-              <div className="flex items-center justify-between mb-8 bg-white p-5 rounded-[2rem] border-2 border-[var(--card-border)] shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-[var(--secondary)]" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-[#2D264B] text-sm uppercase tracking-wider">Unsere Gedanken</h3>
-                    <p className="text-[10px] text-[#8E89AA] font-bold tracking-tight">{partnerResults ? 'Beide geantwortet! ✨' : `${partnerName} antwortet noch...`}</p>
-                  </div>
-                </div>
-                <button onClick={resetQuiz} className="p-3 bg-purple-50 rounded-xl border border-purple-100 shadow-sm active:scale-90 transition-all group" title="Neu starten">
-                  <RefreshCcw className="w-4 h-4 text-[var(--secondary)] group-hover:rotate-180 transition-transform duration-500" />
-                </button>
-              </div>
-              <div className="space-y-10 pb-10">
+            <div className="flex-1 overflow-hidden pr-1 pb-4">
+              <div className="space-y-10 pb-10 pt-4">
                 {dailyQs.map((question, i) => {
                   const m = myResults[i] || "—";
                   const p = partnerResults?.[i];
@@ -337,6 +357,11 @@ export default function Questions({ userName, partnerName, partnerId, onComplete
                   );
                 })}
               </div>
+            </div>
+            <div className="pb-6 pt-2 text-center">
+              <button onClick={resetQuiz} className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--primary)] transition-colors py-2">
+                Antworten zurücksetzen
+              </button>
             </div>
           </div>
         )}

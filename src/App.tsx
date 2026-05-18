@@ -208,10 +208,12 @@ export default function App() {
         if (profileData.partner_id) userIds.push(profileData.partner_id);
 
         const { data: answers } = await supabase.from('answers').select('*').in('user_id', userIds).eq('day_key', dayKey);
+        const { data: streaks } = await supabase.from('streaks').select('*').in('user_id', userIds);
 
         setDashboardData({
           answers: answers || [],
-          questions: currentQs
+          questions: currentQs,
+          streaks: streaks || []
         });
       }
     } catch (e: any) {
@@ -392,7 +394,13 @@ export default function App() {
                     else navigate('/questions');
                   }} 
                 />} />
-                <Route path="/questions" element={profile.partner_id ? <Questions userName={profile.display_name} partnerName={partnerProfile?.display_name || 'Partner'} partnerId={profile.partner_id} onComplete={refreshData} /> : <Navigate to="/dashboard" replace />} />
+                <Route path="/questions" element={profile.partner_id ? <Questions 
+                  userName={profile.display_name} 
+                  partnerName={partnerProfile?.display_name || 'Partner'} 
+                  partnerId={profile.partner_id} 
+                  dashboardData={dashboardData}
+                  onComplete={refreshData} 
+                /> : <Navigate to="/dashboard" replace />} />
                 <Route path="/profile" element={<Profile profile={profile} partnerProfile={partnerProfile} onLogout={handleLogout} />} />
                 <Route path="/" element={profile.onboarding_completed ? <Navigate to="/dashboard" replace /> : <Navigate to="/onboarding" replace />} />
               </Routes>
