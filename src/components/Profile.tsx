@@ -120,7 +120,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         try {
           const { error } = await supabase.rpc('unlink_partners');
           if (error) throw error;
-          window.location.reload();
         } catch (err) {
           showAlert("Fehler!", "error");
         } finally {
@@ -142,11 +141,11 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         showAlert(error.message || "Code nicht gefunden!", "error");
         return;
       }
-      window.location.reload();
     } catch (err: any) {
       showAlert("Fehler!", "error");
     } finally {
       setIsLinking(false);
+      setPartnerCodeInput('');
     }
   };
 
@@ -205,7 +204,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           const oldPath = profile.avatar_url.split('/avatars/')[1];
           if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);
           await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id);
-          window.location.reload();
         } catch (err) {
           showAlert("Fehler beim Löschen!", "error");
         } finally {
@@ -229,7 +227,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       await supabase.storage.from('avatars').upload(fileName, croppedBlob, { contentType: 'image/jpeg', upsert: true });
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
-      window.location.reload();
     } catch (err: any) {
       showAlert("Fehler!", "error");
     } finally {

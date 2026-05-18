@@ -69,7 +69,6 @@ export default function Dashboard({
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
           await supabase.from('answers').delete().eq('day_key', dayKey).eq('user_id', user.id);
-          window.location.reload();
         } catch (err) {
           showAlert("Fehler beim Löschen der Antworten.", "error");
         }

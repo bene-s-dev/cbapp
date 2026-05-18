@@ -131,23 +131,49 @@ export default function App() {
 
   const navigate = useNavigate();
   const dayKey = getDailyKey();
+  const fetchLock = React.useRef<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const [profileRes, questionsRes] = await Promise.all([
-        supabase.from('profiles').select('*, partner:partner_id(id, display_name, avatar_url)').eq('id', userId).maybeSingle(),
-        supabase.from('daily_questions').select('questions').eq('day_key', dayKey).maybeSingle()
-      ]);
+    // Prevent redundant parallel fetches for the same user
+    if (fetchLock.current === userId + dayKey) return;
+    fetchLock.current = userId + dayKey;
 
-      const qData = questionsRes.data?.questions;
+    try {
+      // 1. First attempt to get existing profile and questions
+      let { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*, partner:partner_id(id, display_name, avatar_url)')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      const { data: questionsRes } = await supabase
+        .from('daily_questions')
+        .select('questions')
+        .eq('day_key', dayKey)
+        .maybeSingle();
+
+      let qData = questionsRes?.questions;
+
+      // 2. If no questions exist for today, trigger the Edge Function
+      if (!qData) {
+        try {
+          const { data: genData, error: genError } = await supabase.functions.invoke('generate-questions', {
+            body: { day_key: dayKey }
+          });
+          if (!genError) qData = genData?.questions;
+        } catch (err) {
+          console.error("Failed to generate questions:", err);
+        }
+      }
+
       const currentQs = (qData && qData.tot && qData.ranking && qData.text) 
         ? [qData.tot, qData.ranking, qData.text] 
         : [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text];
 
-      if (profileRes.error) throw profileRes.error;
-      let data = profileRes.data;
-
-      if (!data) {
+      // 3. Robust Profile Handling (Handle multi-tab race condition where profile exists but wasn't found)
+      if (!profileData) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const newProfile = {
@@ -156,21 +182,33 @@ export default function App() {
             partner_code: 'CB-' + userId.substring(0, 6).toUpperCase(),
             onboarding_completed: false
           };
-          const { data: inserted } = await supabase.from('profiles').insert([newProfile]).select().maybeSingle();
+
+          const { data: inserted, error: insertError } = await supabase
+            .from('profiles')
+            .insert([newProfile])
+            .select('*, partner:partner_id(id, display_name, avatar_url)')
+            .maybeSingle();
+
           if (inserted) {
-            setProfile(inserted);
-            setDashboardData({ answers: [], questions: currentQs });
+            profileData = inserted;
+          } else if (insertError) {
+            // If insert fails (maybe already created in another tab), try one last fetch
+            const { data: retryData } = await supabase.from('profiles').select('*, partner:partner_id(id, display_name, avatar_url)').eq('id', userId).maybeSingle();
+            profileData = retryData;
           }
         }
-      } else {
-        setProfile(data);
-        if (data.partner) setPartnerProfile(data.partner);
+      }
+
+      if (profileData) {
+        setProfile(profileData);
+        if (profileData.partner) setPartnerProfile(profileData.partner);
+        else setPartnerProfile(null);
 
         const userIds = [userId];
-        if (data.partner_id) userIds.push(data.partner_id);
+        if (profileData.partner_id) userIds.push(profileData.partner_id);
 
         const { data: answers } = await supabase.from('answers').select('*').in('user_id', userIds).eq('day_key', dayKey);
-        
+
         setDashboardData({
           answers: answers || [],
           questions: currentQs
@@ -178,33 +216,39 @@ export default function App() {
       }
     } catch (e: any) {
       console.error("Profil-Fehler:", e);
-      setDashboardData({ answers: [], questions: [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text] });
+      // Ensure we have at least fallback data to prevent total hang
+      if (!dashboardData) {
+        setDashboardData({ answers: [], questions: [FALLBACK_QUESTIONS.tot, FALLBACK_QUESTIONS.ranking, FALLBACK_QUESTIONS.text] });
+      }
     } finally {
+      fetchLock.current = null;
       setLoading(false);
     }
-  }, [dayKey]);
+  }, [dayKey, dashboardData]);
 
   useEffect(() => {
     let mounted = true;
-    
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (mounted && s) {
-        setSession(s);
-        fetchProfile(s.user.id);
-      } else if (mounted) {
-        setLoading(false);
+      if (mounted) {
+        if (s) {
+          setSession(s);
+          fetchProfile(s.user.id);
+        } else {
+          setLoading(false);
+        }
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
-      
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (s) {
           setSession(s);
           fetchProfile(s.user.id);
         }
-      } else if (event === 'SIGNED_OUT' || (event === 'USER_UPDATED' && !s)) {
+      } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setProfile(null);
         setPartnerProfile(null);
@@ -212,8 +256,73 @@ export default function App() {
         setLoading(false);
       }
     });
+
     return () => { mounted = false; subscription.unsubscribe(); };
   }, [fetchProfile]);
+
+
+  // --- Realtime Sync Subscriptions ---
+  useEffect(() => {
+    if (!session?.user.id) return;
+
+    // 1. Subscribe to MY profile changes (name, partner_id, avatar, etc.)
+    const myProfileChannel = supabase
+      .channel(`my-profile-${session.user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'profiles', 
+        filter: `id=eq.${session.user.id}` 
+      }, () => fetchProfile(session.user.id))
+      .subscribe();
+
+    // 2. Subscribe to TODAY'S answers (mine and partner's)
+    const answersChannel = supabase
+      .channel(`daily-answers-${dayKey}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'answers', 
+        filter: `day_key=eq.${dayKey}` 
+      }, () => fetchProfile(session.user.id))
+      .subscribe();
+
+    // 2.5 Subscribe to TODAY'S questions (in case they are generated while user is online)
+    const questionsChannel = supabase
+      .channel(`daily-questions-${dayKey}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'daily_questions',
+        filter: `day_key=eq.${dayKey}`
+      }, () => fetchProfile(session.user.id))
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(myProfileChannel);
+      supabase.removeChannel(answersChannel);
+      supabase.removeChannel(questionsChannel);
+    };
+  }, [session?.user.id, dayKey, fetchProfile]);
+
+  // 3. Subscribe to PARTNER'S profile changes (name, avatar) - dynamic
+  useEffect(() => {
+    if (!session?.user.id || !profile?.partner_id) return;
+
+    const partnerProfileChannel = supabase
+      .channel(`partner-profile-${profile.partner_id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'profiles', 
+        filter: `id=eq.${profile.partner_id}` 
+      }, () => fetchProfile(session.user.id))
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(partnerProfileChannel);
+    };
+  }, [session?.user.id, profile?.partner_id, fetchProfile]);
 
   const handleLogout = async () => {
     try {
