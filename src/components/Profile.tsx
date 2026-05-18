@@ -4,6 +4,15 @@ import { Camera, Copy, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCi
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
+// --- Globaler Catcher für das Installations-Event ---
+let globalDeferredPrompt: any = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    globalDeferredPrompt = e;
+  });
+}
+
 interface ProfileProps {
   profile: any;
   partnerProfile: any;
@@ -23,7 +32,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   const [isLinking, setIsLinking] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialProfile?.display_name || '');
-  const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   useEffect(() => {
@@ -47,16 +56,21 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     setIsAndroid(/Android/.test(ua));
     setIsStandalone(checkStandalone());
 
+    if (globalDeferredPrompt) {
+      setDeferredPrompt(globalDeferredPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
-      // WICHTIG: Das hier unterdrückt den automatischen Chrome-Banner!
-      e.preventDefault(); 
-      // Wir speichern das Event für später, wenn der Button geklickt wird
+      e.preventDefault();
       setDeferredPrompt(e);
+      globalDeferredPrompt = e;
     };
 
     const handleAppInstalled = () => {
       setIsStandalone(true);
       setDeferredPrompt(null);
+      globalDeferredPrompt = null;
+      setShowInstallModal(false);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -70,29 +84,15 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
 
   const isDesktop = !isIOS && !isAndroid;
 
-  const handleInstallClick = async () => {
-    if (isDesktop) {
-      showAlert("Die Installation ist nur auf Mobilgeräten möglich.", "info");
-      return;
-    }
-
-    if (isIOS) {
-      setShowIOSModal(true);
-      return;
-    }
-
-    if (isAndroid) {
-      if (deferredPrompt) {
-        // Hier rufen wir den Installations-Dialog explizit auf
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          setDeferredPrompt(null);
-        }
-      } else {
-        showAlert("Bitte lade die Seite neu oder nutze das Browser-Menü zur Installation.", "info");
+  const triggerAndroidInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        globalDeferredPrompt = null;
+        setShowInstallModal(false);
       }
-      return;
     }
   };
 
@@ -209,7 +209,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-visible">
-        {/* Header with Avatar, Name and Logout Button */}
         <header className="flex flex-col items-center mb-8 relative pt-1">
           <button 
             onClick={onLogout} 
@@ -254,9 +253,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         </header>
 
         <div className="space-y-3 w-full overflow-hidden">
-          {/* Connection Section */}
           <div className="space-y-3">
-            {/* My Code Box */}
             <div className="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-sm flex items-center justify-between">
               <div className="flex flex-col pl-1">
                 <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">Mein Partner-Code:</span>
@@ -267,7 +264,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               <button onClick={() => { if (profile?.partner_code) { navigator.clipboard.writeText(profile.partner_code); showAlert("Code kopiert! ✨", "success"); } }} className="p-2.5 bg-white border border-blue-100 rounded-xl text-blue-400 active:scale-90 transition-all shadow-sm hover:border-blue-200"><Copy className="w-4.5 h-4.5" /></button>
             </div>
 
-            {/* Partner Connection Status */}
             {profile?.partner_id ? (
               <div className="flex flex-col items-center justify-center p-5 rounded-[2rem] bg-blue-50 border border-blue-100 shadow-sm relative overflow-hidden">
                 <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">Bisou-Partner:</span>
@@ -293,20 +289,18 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
             )}
 
-            {/* App Usage Box */}
             <div className="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-sm flex flex-col items-center justify-center">
               <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">App Nutzung:</span>
               {isStandalone ? (
                 <span className="font-black text-[15px] text-blue-900 tracking-tight flex items-center gap-2">✨ Installiert</span>
               ) : (
-                <button onClick={handleInstallClick} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">App jetzt installieren</button>
+                <button onClick={() => setShowInstallModal(true)} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">Bisou als App installieren</button>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Avatar Menu Modal */}
       {showAvatarMenu && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
           <div className="absolute inset-0" onClick={() => setShowAvatarMenu(false)} />
@@ -321,18 +315,65 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         </div>
       )}
 
-      {/* iOS Install Modal */}
-      {showIOSModal && (
+      {/* Unified Install Modal */}
+      {showInstallModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-[#2D264B]/60 backdrop-blur-md" onClick={() => setShowIOSModal(false)} />
+          <div className="absolute inset-0 bg-[#2D264B]/60 backdrop-blur-md" onClick={() => setShowInstallModal(false)} />
           <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl text-center">
-            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-5 mx-auto"><Download className="w-7 h-7 text-[var(--secondary)]" /></div>
-            <h3 className="text-xl font-bold text-[#1F1939] mb-6 tracking-tight">App installieren</h3>
-            <div className="space-y-5 mb-8 text-left">
-              <div className="flex items-center gap-4"><div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[var(--secondary)] text-sm">1</div><p className="text-sm text-[#4A4468] font-medium leading-relaxed">Tippe unten in deinem Browser auf **Teilen**.</p></div>
-              <div className="flex items-center gap-4"><div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[var(--secondary)] text-sm">2</div><p className="text-sm text-[#4A4468] font-medium leading-relaxed">Wähle **"Zum Home-Bildschirm"** aus dem Menü.</p></div>
+            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-5 mx-auto">
+              <Download className="w-7 h-7 text-[var(--secondary)]" />
             </div>
-            <button onClick={() => setShowIOSModal(false)} className="btn-action py-4 text-sm font-bold shadow-lg">Alles klar! ✨</button>
+            <h3 className="text-xl font-bold text-[#1F1939] mb-4 tracking-tight">App installieren</h3>
+
+            {isAndroid && (
+              <>
+                <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-6">
+                  Ich sehe, du nutzt ein <b className="text-[#1F1939]">Android-Gerät</b>.
+                </p>
+                {deferredPrompt ? (
+                  <button onClick={triggerAndroidInstall} className="w-full py-4 rounded-xl bg-blue-500 text-white font-bold shadow-md active:scale-95 transition-all hover:bg-blue-600">
+                    Jetzt installieren
+                  </button>
+                ) : (
+                  <p className="text-xs text-red-500 bg-red-50 p-3 rounded-xl border border-red-100">
+                    Bitte lade die Seite neu oder nutze das Browser-Menü (⋮) und wähle "App installieren".
+                  </p>
+                )}
+              </>
+            )}
+
+            {isIOS && (
+              <>
+                <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-6">
+                  Ich sehe, du nutzt ein <b className="text-[#1F1939]">iPhone oder iPad</b>.
+                </p>
+                <div className="space-y-5 mb-8 text-left">
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[var(--secondary)] text-sm">1</div>
+                    <p className="text-sm text-[#4A4468] font-medium leading-relaxed">Tippe unten in deinem Browser auf <b className="text-[#1F1939]">Teilen</b>.</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center font-bold text-[var(--secondary)] text-sm">2</div>
+                    <p className="text-sm text-[#4A4468] font-medium leading-relaxed">Wähle <b className="text-[#1F1939]">"Zum Home-Bildschirm"</b> aus dem Menü.</p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {isDesktop && (
+              <>
+                <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-6">
+                  Ich sehe, du nutzt ein <b className="text-[#1F1939]">Desktop-Gerät</b>.
+                </p>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-sm text-[#4A4468] font-medium">Die App-Installation ist für Mobilgeräte optimiert. Bitte öffne diese Seite auf deinem Smartphone.</p>
+                </div>
+              </>
+            )}
+
+            <button onClick={() => setShowInstallModal(false)} className="w-full mt-6 p-3 text-[var(--muted)] font-bold text-[10px] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">
+              Schließen
+            </button>
           </div>
         </div>
       )}
