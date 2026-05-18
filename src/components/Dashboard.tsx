@@ -139,94 +139,94 @@ export default function Dashboard({
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
       <div className="flex-1 flex flex-col">
         {/* Avatars Section */}
-        <div className="relative h-[120px] mb-10 pointer-events-none">
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-start pointer-events-auto">
+        <div className="relative h-[110px] mb-4 pointer-events-none">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-start pointer-events-auto mt-4">
             {/* Partner Avatar & Name (Left & Front) */}
             <div className="flex flex-col items-center relative z-20">
-              <div className={`w-24 h-24 rounded-[2.5rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-10 h-10 text-purple-200" />) : (<Users className="w-10 h-10 text-purple-200" />)}
+              <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
+                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <span className="text-[11px] font-black text-[var(--muted)] mt-3 uppercase tracking-[0.2em] max-w-[90px] truncate text-center">
+              <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
                 {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
               </span>
             </div>
 
             {/* My Avatar & Name (Right & Back) */}
-            <div className="flex flex-col items-center relative z-10 -ml-8">
-              <div className="w-24 h-24 rounded-[2.5rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
-                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-10 h-10 text-purple-200" />)}
+            <div className="flex flex-col items-center relative z-10 -ml-6">
+              <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
+                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <span className="text-[11px] font-black text-[var(--muted)] mt-3 uppercase tracking-[0.2em] max-w-[90px] truncate text-center">
+              <span className="text-[10px] font-black text-[var(--muted)] mt-2 uppercase tracking-[0.2em] max-w-[80px] truncate text-center">
                 {userName.split(' ')[0]}
               </span>
             </div>
 
             {/* Floating Heart */}
             {hasPartner && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-16 z-30 shadow-md border-2 border-white w-9 h-9 rounded-full bg-red-50 flex items-center justify-center">
-                <HeartIcon className="w-5 h-5 text-[var(--primary)] fill-current" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-12 z-30 shadow-md border-2 border-white w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                <HeartIcon className="w-4 h-4 text-[var(--primary)] fill-current" />
               </div>
             )}
           </div>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-black text-[#1F1939] leading-tight tracking-tight">
+        <div className="mb-4">
+          <h2 className="text-xl font-black text-[#1F1939] leading-tight tracking-tight">
             {greeting} <span className="text-[var(--secondary)]">{userName}</span>! ❤️
           </h2>
         </div>
         
         {!hasPartner ? (
-          <div className="status-box flex flex-col items-center text-center p-8 mb-4">
-            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)] border border-purple-100"><Users className="w-7 h-7" /></div>
-            <p className="font-black text-lg mb-2 text-[var(--text-main)]">Der erste Schritt</p>
-            <p className="text-xs text-[var(--muted)] font-medium mb-6 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
-            <button onClick={() => navigate('/profile')} className="btn-action py-3 px-8 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
+          <div className="status-box flex flex-col items-center text-center p-6 mb-2">
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100"><Users className="w-6 h-6" /></div>
+            <p className="font-black text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
+            <p className="text-[10px] text-[var(--muted)] font-medium mb-4 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
+            <button onClick={() => navigate('/profile')} className="btn-action py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
           </div>
         ) : (
-          <div className="status-box p-6 mb-4 space-y-6">
-            <div className="flex flex-col gap-4">
+          <div className="status-box p-4 mb-2 space-y-4">
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <div className={`status-dot ${meAnswered ? 'status-green' : 'status-red'}`} />
-                  <span className="font-black text-sm text-[var(--text-main)] uppercase tracking-wide">Meine Antwort</span>
+                  <span className="font-black text-xs text-[var(--text-main)] uppercase tracking-wide">Meine Antwort</span>
                 </div>
-                <span className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider border-2 ${meAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-red-50 text-[var(--primary)] border-red-100'}`}>
+                <span className={`px-3 py-1.5 rounded-full font-black text-[9px] uppercase tracking-wider border-2 ${meAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-red-50 text-[var(--primary)] border-red-100'}`}>
                   {meAnswered ? 'Fertig' : 'Offen'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <div className={`status-dot ${partnerAnswered ? 'status-green' : 'status-orange'}`} />
-                  <span className="font-black text-sm text-[var(--text-main)] uppercase tracking-wide">{partnerName}</span>
+                  <span className="font-black text-xs text-[var(--text-main)] uppercase tracking-wide">{partnerName}</span>
                 </div>
-                <span className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider border-2 ${partnerAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
+                <span className={`px-3 py-1.5 rounded-full font-black text-[9px] uppercase tracking-wider border-2 ${partnerAnswered ? 'bg-green-50 text-[var(--accent-green)] border-green-100' : 'bg-orange-50 text-orange-500 border-orange-100'}`}>
                   {partnerAnswered ? 'Fertig' : 'Wartet'}
                 </span>
               </div>
             </div>
 
-            <div className="pt-5 border-t-2 border-purple-50 flex items-center justify-between">
+            <div className="pt-4 border-t-2 border-purple-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[var(--muted)]" />
-                <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Neue Fragen in:</span>
+                <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
+                <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Neue Fragen in:</span>
               </div>
-              <span className="font-mono font-black text-sm text-[var(--secondary)] tracking-widest">
+              <span className="font-mono font-black text-xs text-[var(--secondary)] tracking-widest">
                 {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
               </span>
             </div>
           </div>
         )}
 
-        <p className="text-[9px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-2 uppercase tracking-[0.2em] opacity-50 mt-2">
-          <Sparkles className="w-3 h-3" /> Fragen generiert von Gemini
+        <p className="text-[8px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-1.5 uppercase tracking-[0.2em] opacity-50 mt-1">
+          <Sparkles className="w-2.5 h-2.5" /> Fragen generiert von Gemini
         </p>
       </div>
 
-      <div className="pb-8 pt-2">
-        <button onClick={onStartQuestions} className="btn-action py-5 font-black text-lg">
-          {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-5 h-5" /> Start gesperrt</>)}
+      <div className="pb-4 pt-1">
+        <button onClick={onStartQuestions} className="btn-action py-4 font-black text-base">
+          {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
       </div>
     </div>

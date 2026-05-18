@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2 } from 'lucide-react';
+import { Camera, Copy, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2, LogOut } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
@@ -247,6 +247,15 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
 
       <div className="flex-1 flex flex-col w-full overflow-hidden">
         <header className="flex flex-col items-center mb-6 relative pt-14 shrink-0">
+          {/* Logout Button */}
+          <button 
+            onClick={onLogout} 
+            className="absolute right-0 top-14 p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-30"
+            title="Abmelden"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+
           <div className="flex flex-col items-center">
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
