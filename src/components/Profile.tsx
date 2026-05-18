@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, Heart, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCircle } from 'lucide-react';
+import { Camera, Copy, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
@@ -48,7 +48,9 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     setIsStandalone(checkStandalone());
 
     const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
+      // WICHTIG: Das hier unterdrückt den automatischen Chrome-Banner!
+      e.preventDefault(); 
+      // Wir speichern das Event für später, wenn der Button geklickt wird
       setDeferredPrompt(e);
     };
 
@@ -66,18 +68,32 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     };
   }, []);
 
+  const isDesktop = !isIOS && !isAndroid;
+
   const handleInstallClick = async () => {
+    if (isDesktop) {
+      showAlert("Die Installation ist nur auf Mobilgeräten möglich.", "info");
+      return;
+    }
+
     if (isIOS) {
       setShowIOSModal(true);
       return;
     }
-    if (!deferredPrompt) {
-      if (isAndroid) showAlert("Bitte nutze das Chrome-Menü (⋮) und wähle 'App installieren'.");
+
+    if (isAndroid) {
+      if (deferredPrompt) {
+        // Hier rufen wir den Installations-Dialog explizit auf
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+        }
+      } else {
+        showAlert("Bitte lade die Seite neu oder nutze das Browser-Menü zur Installation.", "info");
+      }
       return;
     }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
   const handleUpdateName = async () => {
@@ -167,13 +183,11 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     setSelectedImage(null);
     setLoading(true);
     try {
-      // 1. Delete old image if exists
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/avatars/')[1];
         if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);
       }
 
-      // 2. Upload new
       const fileName = `${profile.id}/${Date.now()}.jpg`;
       await supabase.storage.from('avatars').upload(fileName, croppedBlob, { contentType: 'image/jpeg', upsert: true });
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
@@ -187,7 +201,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   };
 
   if (!profile) return null;
-  const isDesktop = !isIOS && !isAndroid;
 
   return (
     <div className="flex flex-col h-full animate-entrance overflow-visible">
@@ -198,8 +211,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       <div className="flex-1 flex flex-col w-full overflow-visible">
         {/* Header with Avatar, Name and Logout Button */}
         <header className="flex flex-col items-center mb-8 relative pt-1">
-          
-          {/* Runder Abmelde-Button oben rechts */}
           <button 
             onClick={onLogout} 
             className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-red-400 shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
@@ -287,8 +298,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">App Nutzung:</span>
               {isStandalone ? (
                 <span className="font-black text-[15px] text-blue-900 tracking-tight flex items-center gap-2">✨ Installiert</span>
-              ) : isDesktop ? (
-                <span className="font-bold text-[10px] text-blue-400 uppercase tracking-wider">Nur mobil möglich</span>
               ) : (
                 <button onClick={handleInstallClick} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">App jetzt installieren</button>
               )}
