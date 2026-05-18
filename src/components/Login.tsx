@@ -105,13 +105,10 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   };
 
   return (
-    {/* min-h-screen durch h-[100dvh] ersetzt, justify-start durch justify-center ersetzt und py-12 entfernt */}
     <div className="flex flex-col items-center justify-center h-[100dvh] w-full max-w-md mx-auto animate-entrance px-4 relative overflow-hidden">
       
-      {/* flex-1 entfernt, da der Parent zentriert ist */}
       <div className="relative z-10 w-full flex flex-col items-center justify-center">
         {mode === 'login' && (
-          {/* mb-12 auf mb-8 reduziert */}
           <div className="text-center mb-8 select-none w-full">
             <h1 className="text-7xl font-semibold text-[var(--text-main)] mb-6 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
@@ -148,7 +145,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           </div>
         )}
         
-        {/* pt-8 und pb-24 entfernt, da der Inhalt nun perfekt mittig sitzt */}
         <div className="w-full">
           {message && (
             <div className={`p-4 rounded-[22px] text-sm font-bold mb-6 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
@@ -240,7 +236,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             </div>
           )}
 
-          {/* Global Forgot Password Link */}
           {mode !== 'forgot' && !(mode === 'register' && regStep === 2 && message?.type === 'success') && (
             <div className="text-center pt-6">
               <button 
@@ -257,7 +252,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           )}
         </div>
 
-        {/* Footer: Fixiert am unteren Rand, bottom-4 für kompakten Look */}
         <footer className="absolute bottom-4 left-0 w-full text-center">
           <p className="text-[10px] font-bold text-[var(--muted)] opacity-50">
             Bisou-App v.01<br />
@@ -287,7 +281,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         </footer>
       </div>
 
-      {/* Privacy Modal */}
       {showPrivacyModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowPrivacyModal(false)} />
@@ -310,7 +303,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         </div>
       )}
 
-      {/* Impressum Modal */}
       {showImpressumModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm" onClick={() => setShowImpressumModal(false)} />
