@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { GREETINGS, Question } from '../constants/questions';
-import { Users, Lock, Heart as HeartIcon, Clock, Sparkles, Flame, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User as UserIcon, Lock, Heart as HeartIcon, Clock, Sparkles, Flame, X, ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getDailyKey, getTimeUntilReset } from '../lib/dateUtils';
 import { useDialog } from './DialogProvider';
@@ -35,7 +35,7 @@ function StreakModal({ isOpen, onClose, streakData, partnerName }: { isOpen: boo
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-[#2D264B]/60 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
       <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -43,8 +43,10 @@ function StreakModal({ isOpen, onClose, streakData, partnerName }: { isOpen: boo
               <Flame className="w-7 h-7 text-orange-500 fill-orange-500" />
             </div>
             <div>
-              <h3 className="font-black text-[#1F1939] text-lg leading-tight">Streak Übersicht</h3>
-              <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-widest">{streakData?.current_streak || 0} Tage Flamme</p>
+              <h3 className="font-black text-[#1F1939] text-lg leading-tight">Streak-Übersicht</h3>
+              <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-widest">
+                Aktueller Streak: {streakData?.current_streak || 0} { (streakData?.current_streak === 1) ? 'Flamme' : 'Flammen' }
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 bg-purple-50 rounded-full text-[var(--muted)]"><X className="w-5 h-5" /></button>
@@ -120,6 +122,7 @@ export default function Dashboard({
     const me = answers.find((a: any) => a.user_id !== partnerId);
     const other = partnerId ? answers.find((a: any) => a.user_id === partnerId) : null;
     
+    // Explicitly identify streaks
     const myS = streaks?.find((s: any) => s.user_id !== partnerId);
     const pS = partnerId ? streaks?.find((s: any) => s.user_id === partnerId) : null;
 
@@ -152,10 +155,10 @@ export default function Dashboard({
 
   if (!dashboardData) return (
     <div className="flex-1 flex flex-col animate-entrance">
-      <div className="relative h-[110px] mb-8">
-        <div className="absolute left-1/2 -translate-x-1/2 flex -space-x-6">
-          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white" />
-          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white" />
+      <div className="relative h-[110px] mb-8 flex flex-col items-center justify-center">
+        <div className="flex -space-x-4">
+          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white z-20" />
+          <div className="w-20 h-20 rounded-[2rem] skeleton border-2 border-white z-10" />
         </div>
       </div>
       <div className="mb-6 space-y-2">
@@ -209,55 +212,68 @@ export default function Dashboard({
 
   return (
     <div className="animate-entrance flex flex-col flex-1 overflow-visible">
-      <div className="flex-1 flex flex-col">
-        {/* Avatars & Streaks Section - Lowered and Centered */}
-        <div className="relative h-[160px] mb-6">
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-start mt-12">
-            {/* Partner Avatar & Name */}
-            <div className="flex flex-col items-center relative z-20">
-              <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-                {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
-              </div>
-              <div className="absolute top-full right-3 flex items-center justify-end gap-1.5 mt-2.5 whitespace-nowrap">
-                {hasPartner && (
-                  <button onClick={() => setShowStreakModal('partner')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
-                    <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />
-                    <span className="text-[10px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
+      <div className="flex-1 flex flex-col pt-8">
+        
+        {/* Header: Avatars and Streaks */}
+        <div className="flex flex-col items-center mb-8 shrink-0">
+          {/* Avatars Row */}
+          <div className="flex -space-x-4 mb-5">
+            <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden z-20 shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
+              {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-purple-200" />)}
+            </div>
+            <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden z-10 shadow-md">
+              {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-purple-200" />)}
+            </div>
+          </div>
+
+          {/* Names and Flames Row - Super Robust Layout */}
+          <div className="w-full flex items-center justify-center pt-2">
+            <div className="flex items-center w-full max-w-[320px]">
+              {/* Partner side (Left) */}
+              <div className="flex-1 flex items-center justify-end gap-2 pr-2 overflow-visible">
+                {hasPartner ? (
+                  <button onClick={() => setShowStreakModal('partner')} className="flex shrink-0 items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
+                    <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500 fill-orange-500" />
+                    <span className="text-[11px] shrink-0 font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
                   </button>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200 opacity-40">
+                    <Flame className="w-3.5 h-3.5 shrink-0 text-gray-400 fill-gray-400" />
+                    <span className="text-[11px] shrink-0 font-black text-gray-400">0</span>
+                  </div>
                 )}
-                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[90px] truncate text-right">
-                  {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
+                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] truncate text-right">
+                  {partnerName.split(' ')[0]}
                 </span>
               </div>
-            </div>
 
-            {/* My Avatar & Name */}
-            <div className="flex flex-col items-center relative z-10 -ml-4">
-              <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
-                {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
-              </div>
-              <div className="absolute top-full left-3 flex items-center justify-start gap-1.5 mt-2.5 whitespace-nowrap">
-                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[90px] truncate text-left">
+              {/* Center spacer */}
+              <div className="w-4 shrink-0" />
+
+              {/* User side (Right) */}
+              <div className="flex-1 flex items-center justify-start gap-2 pl-2 overflow-visible">
+                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] truncate">
                   {userName.split(' ')[0]}
                 </span>
-                <button onClick={() => setShowStreakModal('me')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
-                  <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />
-                  <span className="text-[10px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
+                <button onClick={() => setShowStreakModal('me')} className="flex shrink-0 items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
+                  <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500 fill-orange-500" />
+                  <span className="text-[11px] shrink-0 font-black text-orange-600">{myStreak?.current_streak || 0}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Greeting Section */}
         <div className="mb-4">
-          <h2 className="text-xl font-black text-[#1F1939] leading-tight tracking-tight">
+          <h2 className="text-xl font-black text-[#1F1939] leading-tight tracking-tight text-center">
             {greeting} <span className="text-[var(--secondary)]">{userName}</span>! ❤️
           </h2>
         </div>
         
         {!hasPartner ? (
           <div className="status-box flex flex-col items-center text-center p-6 mb-2">
-            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100"><Users className="w-6 h-6" /></div>
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100"><LinkIcon className="w-6 h-6" /></div>
             <p className="font-black text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
             <p className="text-[10px] text-[var(--muted)] font-medium mb-4 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
             <button onClick={() => navigate('/profile')} className="btn-action py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
@@ -303,7 +319,7 @@ export default function Dashboard({
         </p>
       </div>
 
-      <div className="pb-3 pt-0">
+      <div className="pb-3 pt-0 shrink-0">
         <button onClick={onStartQuestions} className="btn-action py-4 font-black text-base">
           {meAnswered ? "Antworten ansehen ✨" : (hasPartner ? "Jetzt starten 🚀" : <><Lock className="w-4 h-4" /> Start gesperrt</>)}
         </button>
