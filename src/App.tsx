@@ -45,7 +45,7 @@ function AppLayout({
       
       {profile.onboarding_completed && showHeader && (
         <header className="px-4 z-20 absolute left-0 right-0 top-0 max-w-md mx-auto w-full pointer-events-none" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
-          <div className="flex items-start justify-end min-h-[40px]">
+          <div className="flex items-start justify-start min-h-[40px]">
             <h1 className="text-2xl font-semibold text-[var(--text-main)] tracking-tight select-none pointer-events-auto" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>

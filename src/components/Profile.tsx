@@ -224,13 +224,13 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   if (!profile) return null;
 
   return (
-    <div className="flex flex-col h-full animate-entrance overflow-y-auto">
+    <div className="flex flex-col h-full animate-entrance overflow-hidden">
       {selectedImage && (
         <ImageCropper image={selectedImage} onCropComplete={handleCropComplete} onCancel={() => setSelectedImage(null)} />
       )}
 
-      <div className="flex-1 flex flex-col w-full">
-        <header className="flex flex-col items-center mb-8 relative pt-14">
+      <div className="flex-1 flex flex-col w-full overflow-hidden">
+        <header className="flex flex-col items-center mb-6 relative pt-14 shrink-0">
           <button 
             onClick={onLogout} 
             className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
@@ -272,17 +272,17 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           </div>
         </header>
 
-        <div className="space-y-4 w-full">
+        <div className="space-y-3 w-full overflow-hidden flex-1 flex flex-col">
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
           {profile?.partner_id ? (
-            <div className="status-box p-6 flex flex-col items-center justify-center gap-4 text-center">
+            <div className="status-box p-5 flex flex-col items-center justify-center gap-3 text-center shrink-0">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">Mein Bisou-Partner:</span>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="font-black text-2xl text-[var(--text-main)] tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
-                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shadow-sm">
-                    <Heart className="w-4 h-4 text-[var(--primary)] fill-current" />
+                  <span className="font-black text-xl text-[var(--text-main)] tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
+                  <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center shadow-sm">
+                    <Heart className="w-3.5 h-3.5 text-[var(--primary)] fill-current" />
                   </div>
                 </div>
               </div>
@@ -290,27 +290,35 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               <button 
                 onClick={handleUnlinkPartner} 
                 disabled={isLinking}
-                className="mt-2 text-[10px] font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors cursor-pointer active:scale-95 uppercase tracking-widest"
+                className="text-[10px] font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors cursor-pointer active:scale-95 uppercase tracking-widest"
               >
-                Partner-Verknüpfung aufheben
+                Verknüpfung aufheben
               </button>
             </div>
           ) : (
-            <div className="status-box p-6 flex flex-col gap-6">
+            <div className="status-box p-5 flex flex-col gap-5 shrink-0">
               <div className="text-center">
-                <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider">Noch kein Partner verknüpft</span>
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Kein Partner verknüpft</span>
               </div>
               
               {/* Oberer Teil: Mein Code */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] ml-1">Mein Bisou-Code</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-purple-50/30 border-2 border-[var(--card-border)] rounded-2xl h-14 flex items-center justify-center font-mono font-black text-lg text-[var(--text-main)] tracking-[0.2em] shadow-sm">
-                    {profile?.partner_code || '...'}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative group overflow-hidden rounded-2xl">
+                    <div className="bg-purple-50/30 border-2 border-[var(--card-border)] h-12 flex items-center justify-center font-mono font-black text-base text-[var(--text-main)] tracking-[0.2em] shadow-sm">
+                      {profile?.partner_code || '...'}
+                    </div>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(profile?.partner_code); showAlert("Code kopiert! ✨", "success"); }}
+                      className="absolute right-1 top-1 bottom-1 w-10 flex items-center justify-center bg-white/50 hover:bg-white rounded-xl text-[var(--secondary)] active:scale-95 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <button 
                     onClick={handleShareCode}
-                    className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-white border-2 border-[var(--card-border)] rounded-2xl text-[var(--secondary)] active:scale-95 transition-all shadow-sm hover:border-[var(--secondary)] hover:bg-purple-50"
+                    className="w-12 h-12 shrink-0 flex items-center justify-center bg-white border-2 border-[var(--card-border)] rounded-2xl text-[var(--secondary)] active:scale-95 transition-all shadow-sm hover:border-[var(--secondary)] hover:bg-purple-50"
                   >
                     <Share2 className="w-5 h-5" />
                   </button>
@@ -318,69 +326,58 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
 
               {/* Unterer Teil: Partnercode eintragen */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] ml-1">Partnercode eintragen:</span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <input 
                     type="text" 
                     placeholder="CODE EINGEBEN" 
                     value={partnerCodeInput} 
                     onChange={(e) => setPartnerCodeInput(e.target.value)} 
-                    className="flex-1 bg-white border-2 border-[var(--card-border)] rounded-2xl h-14 text-center font-mono font-black text-lg text-[var(--text-main)] outline-none focus:border-[var(--secondary)] transition-colors placeholder:text-purple-200 placeholder:font-sans placeholder:text-[10px] placeholder:tracking-widest uppercase shadow-sm"
+                    className="flex-1 bg-white border-2 border-[var(--card-border)] rounded-2xl h-12 text-center font-mono font-black text-base text-[var(--text-main)] outline-none focus:border-[var(--secondary)] transition-colors placeholder:text-purple-200 placeholder:font-sans placeholder:text-[9px] placeholder:tracking-widest uppercase shadow-sm"
                   />
                   <button 
                     onClick={handleLinkPartner} 
                     disabled={!partnerCodeInput || isLinking} 
-                    className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-[var(--secondary)] text-white rounded-2xl shadow-md active:scale-95 transition-all hover:bg-purple-500 disabled:opacity-30 disabled:grayscale"
+                    className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-[var(--secondary)] text-white rounded-2xl shadow-md active:scale-95 transition-all hover:bg-purple-500 disabled:opacity-30 disabled:grayscale"
                   >
-                    <Check className="w-6 h-6" />
+                    <Check className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* App Nutzung Box */}
-          <div className="status-box p-4 flex flex-col items-center justify-center text-center shadow-sm">
-            <div className="w-10 h-10 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100">
-              <Download className="w-5 h-5" />
-            </div>
-            <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-1.5">App installieren</span>
-            
-            {isDesktop ? (
-              <p className="text-xs font-bold text-[var(--muted)] leading-relaxed px-4">
-                Installation auf Mobilgeräten empfohlen für das beste Erlebnis.
-              </p>
-            ) : isStandalone ? (
-              <div className="flex items-center gap-2 py-2 px-6 bg-green-50 rounded-full border border-green-100 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-[var(--accent-green)] animate-pulse" />
-                <span className="font-black text-[11px] text-[var(--accent-green)] uppercase tracking-widest">Als App installiert</span>
-              </div>
-            ) : (
-              <>
+          {/* App Nutzung */}
+          {!isStandalone && (
+            <div className="flex justify-center pt-2 shrink-0">
+              {isDesktop ? (
+                <div className="status-box p-3.5 text-center">
+                  <p className="text-[11px] font-bold text-[var(--muted)] leading-tight">
+                    Mobil-Installation empfohlen.
+                  </p>
+                </div>
+              ) : (
                 <button 
                   onClick={() => setShowInstallModal(true)} 
                   className="btn-secondary py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2"
                 >
                   Bisou-App installieren
                 </button>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
-          <div className="pt-6 pb-4 flex justify-center">
+          <div className="mt-auto pb-4 flex justify-center shrink-0">
             <button 
               onClick={() => {
                 showConfirm(
-                  "Möchtest du deinen Bisou-Account wirklich unwiderruflich löschen? Alle deine Daten und Antworten werden dabei für immer entfernt. Dies kann nicht rückgängig gemacht werden.",
+                  "Möchtest du deinen Bisou-Account wirklich unwiderruflich löschen? Alle deine Daten und Antworten werden dabei für immer entfernt.",
                   async () => {
                     try {
                       setLoading(true);
-                      // Delete profile (will cascade to answers)
                       const { error } = await supabase.from('profiles').delete().eq('id', profile.id);
                       if (error) throw error;
-                      
-                      // Use the passed onLogout handler for a clean exit
                       onLogout();
                     } catch (err) {
                       showAlert("Fehler beim Löschen des Accounts.", "error");
