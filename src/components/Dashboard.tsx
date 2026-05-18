@@ -181,7 +181,7 @@ export default function Dashboard({
             <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)] border border-purple-100"><Users className="w-7 h-7" /></div>
             <p className="font-black text-lg mb-2 text-[var(--text-main)]">Der erste Schritt</p>
             <p className="text-xs text-[var(--muted)] font-medium mb-6 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
-            <button onClick={() => navigate('/profile')} className="btn-secondary py-3 px-8 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2">Jetzt Code teilen ✨</button>
+            <button onClick={() => navigate('/profile')} className="btn-action py-3 px-8 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
           </div>
         ) : (
           <div className="status-box p-6 mb-4 space-y-6">
@@ -220,7 +220,7 @@ export default function Dashboard({
         )}
 
         <p className="text-[9px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-2 uppercase tracking-[0.2em] opacity-50 mt-2">
-          <Sparkles className="w-3 h-3" /> Powered by Gemini
+          <Sparkles className="w-3 h-3" /> Fragen generiert von Gemini
         </p>
       </div>
 

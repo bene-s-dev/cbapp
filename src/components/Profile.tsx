@@ -224,12 +224,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   if (!profile) return null;
 
   return (
-    <div className="flex flex-col h-full animate-entrance overflow-visible">
+    <div className="flex flex-col h-full animate-entrance overflow-y-auto">
       {selectedImage && (
         <ImageCropper image={selectedImage} onCropComplete={handleCropComplete} onCancel={() => setSelectedImage(null)} />
       )}
 
-      <div className="flex-1 flex flex-col w-full overflow-visible">
+      <div className="flex-1 flex flex-col w-full">
         <header className="flex flex-col items-center mb-8 relative pt-14">
           <button 
             onClick={onLogout} 
@@ -272,7 +272,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           </div>
         </header>
 
-        <div className="space-y-4 w-full overflow-hidden">
+        <div className="space-y-4 w-full">
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
           {profile?.partner_id ? (
@@ -341,11 +341,11 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           )}
 
           {/* App Nutzung Box */}
-          <div className="status-box p-6 flex flex-col items-center justify-center text-center shadow-sm">
-            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 text-[var(--secondary)] border border-purple-100">
-              <Download className="w-6 h-6" />
+          <div className="status-box p-4 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="w-10 h-10 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100">
+              <Download className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-2">App Nutzung</span>
+            <span className="text-[9px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-1.5">App installieren</span>
             
             {isDesktop ? (
               <p className="text-xs font-bold text-[var(--muted)] leading-relaxed px-4">
@@ -358,18 +358,17 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
             ) : (
               <>
-                <p className="text-xs text-[var(--muted)] font-bold mb-5 leading-relaxed">Installiere Bisou für schnellen Zugriff und tägliche Küsse:</p>
                 <button 
                   onClick={() => setShowInstallModal(true)} 
-                  className="btn-secondary py-3 px-8 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2"
+                  className="btn-secondary py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm border-2"
                 >
-                  Jetzt installieren ✨
+                  Bisou-App installieren
                 </button>
               </>
             )}
           </div>
 
-          <div className="pt-6 flex justify-center">
+          <div className="pt-6 pb-4 flex justify-center">
             <button 
               onClick={() => {
                 showConfirm(

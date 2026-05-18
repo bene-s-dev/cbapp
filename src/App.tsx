@@ -37,19 +37,18 @@ function AppLayout({
     return <Navigate to="/onboarding" replace />;
   }
 
-  const isProfile = location.pathname === '/profile';
+  const showHeader = location.pathname === '/profile' || location.pathname === '/dashboard';
 
   return (
     <div className="h-[100svh] w-screen overflow-hidden relative text-[#1F1939] select-none bg-[#F8F7FF] flex flex-col">
       <div className="bg-aura" />
       
-      {profile.onboarding_completed && isProfile && (
+      {profile.onboarding_completed && showHeader && (
         <header className="px-4 z-20 absolute left-0 right-0 top-0 max-w-md mx-auto w-full pointer-events-none" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
-          <div className="flex items-start justify-between min-h-[40px]">
+          <div className="flex items-start justify-end min-h-[40px]">
             <h1 className="text-2xl font-semibold text-[var(--text-main)] tracking-tight select-none pointer-events-auto" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
-            <div className="w-10 h-10" />
           </div>
         </header>
       )}
