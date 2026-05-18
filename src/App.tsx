@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Home, MessageCircle, User as UserIcon, Lock } from 'lucide-react';
+import { Home, MessageCircle, User as UserIcon, Lock, LogOut } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
