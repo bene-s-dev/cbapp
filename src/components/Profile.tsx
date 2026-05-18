@@ -1,6 +1,6 @@
-import Rendroidct, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart } from 'lucide-react';
+import { Camera, Copy, LogOut, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2 } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
@@ -150,6 +150,27 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     }
   };
 
+  const handleShareCode = async () => {
+    if (!profile?.partner_code) return;
+    
+    const shareData = {
+      title: 'Bisou Partner-Code',
+      text: `Verknüpfe dich mit mir auf Bisou! Mein Code ist: ${profile.partner_code}`,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Teilen abgebrochen oder fehlgeschlagen', err);
+      }
+    } else {
+      // Fallback, falls die Web Share API nicht unterstützt wird
+      navigator.clipboard.writeText(profile.partner_code);
+      showAlert("Code kopiert! ✨", "success");
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -209,7 +230,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-visible">
-        <header className="flex flex-col items-center mb-8 relative pt-1">
+        <header className="flex flex-col items-center mb-8 relative pt-14">
           <button 
             onClick={onLogout} 
             className="absolute top-0 right-0 p-2.5 rounded-full bg-white border border-red-100 text-red-400 shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 z-20"
@@ -229,14 +250,13 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
               <button 
                 onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}
-                className="absolute -right-1 bottom-0.5 p-1.5 rounded-full bg-white border-2 border-blue-50 text-blue-400 shadow-md active:scale-90 hover:border-blue-100 transition-all z-30"
+                className="absolute -right-1 bottom-0.5 p-1.5 rounded-full bg-white border-2 border-blue-50 text-blue-400 shadow-md active:scale-90 hover:border-blue-100 hover:text-blue-500 transition-all z-30"
               >
                 <Pencil className="w-3 h-3" />
               </button>
             </div>
             
             <div className="mt-3 flex flex-col items-center gap-0.5">
-              <span className="text-[7px] font-black text-blue-300 uppercase tracking-[0.2em] mb-0.5">Name ✨</span>
               {isEditingName ? (
                 <div className="flex items-center gap-1">
                   <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="text-sm font-black text-[var(--text-main)] bg-blue-50 border-b-2 border-blue-400 outline-none text-center py-1 w-[120px]" autoFocus onBlur={handleUpdateName} onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()} />
@@ -245,7 +265,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               ) : (
                 <div className="flex items-center gap-2 group cursor-pointer bg-white/50 px-4 py-1.5 rounded-full border border-transparent hover:border-blue-100 transition-all" onClick={() => setIsEditingName(true)}>
                   <span className="text-[15px] font-black text-[var(--text-main)] uppercase tracking-[0.1em]">{profile?.display_name || 'User'}</span>
-                  <Pencil className="w-4 h-4 text-blue-200 group-hover:text-blue-400 transition-colors" />
+                  <Pencil className="w-4 h-4 text-blue-400 group-hover:text-blue-500 transition-colors" />
                 </div>
               )}
             </div>
@@ -255,73 +275,70 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         <div className="space-y-4 w-full overflow-hidden">
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
-          <div className="bg-white rounded-[2rem] border border-blue-100 shadow-sm overflow-hidden flex flex-col">
-            
-            {/* Obere Hälfte: Mein Code */}
-            <div className="bg-blue-50/50 p-4 px-5 flex items-center justify-between border-b border-blue-100/60">
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1.5">Mein Partner-Code</span>
-                <div className="bg-white px-3 py-1 rounded-lg border border-blue-100 shadow-sm inline-flex items-center w-fit">
-                  <span className="font-mono font-black text-[14px] text-blue-900 tracking-widest">{profile?.partner_code || '...'}</span>
+          {profile?.partner_id ? (
+            <div className="bg-white rounded-[2rem] border border-blue-100 shadow-sm p-6 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Mein Bisou-Partner:</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="font-black text-2xl text-blue-900 tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
+                  <Heart className="w-6 h-6 text-pink-400 fill-pink-400" />
                 </div>
               </div>
+              
               <button 
-                onClick={() => { if (profile?.partner_code) { navigator.clipboard.writeText(profile.partner_code); showAlert("Code kopiert! ✨", "success"); } }} 
-                className="p-2.5 bg-white border border-blue-100 rounded-xl text-blue-400 active:scale-90 transition-all shadow-sm hover:border-blue-200"
+                onClick={handleUnlinkPartner} 
+                disabled={isLinking}
+                className="mt-3 text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors cursor-pointer active:scale-95"
               >
-                <Copy className="w-4.5 h-4.5" />
+                Partner auf Bisou entkoppeln
               </button>
             </div>
-
-            {/* Untere Hälfte: Partner Status */}
-            <div className="p-5">
-              {profile?.partner_id ? (
-                <div className="flex flex-col items-center justify-center pt-1 pb-2">
-                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-3">Verbunden mit</span>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="font-black text-[16px] text-blue-900 tracking-tight">{profile.display_name}</span>
-                    <Heart className="w-4 h-4 text-pink-400 fill-pink-400" />
-                    <span className="font-black text-[16px] text-blue-900 tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
+          ) : (
+            <div className="bg-white rounded-[2rem] border border-blue-100 shadow-sm p-5 flex flex-col gap-6">
+              <div className="text-center">
+                <span className="text-[11px] font-bold text-gray-400">Noch kein Bisou-Partner verknüpft.</span>
+              </div>
+              
+              {/* Oberer Teil: Mein Code */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest ml-1">Mein Bisou-Code</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-blue-50/50 border border-blue-100 rounded-2xl h-12 flex items-center justify-center font-mono font-black text-[15px] text-blue-900 tracking-widest">
+                    {profile?.partner_code || '...'}
                   </div>
                   <button 
-                    onClick={handleUnlinkPartner} 
-                    disabled={isLinking}
-                    className="text-[10px] font-bold text-red-500 hover:bg-red-100 transition-colors flex items-center gap-1.5 active:scale-95 bg-red-50 px-4 py-2 rounded-full border border-red-100"
+                    onClick={handleShareCode}
+                    className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white border border-blue-200 rounded-2xl text-blue-500 active:scale-95 transition-all shadow-sm hover:border-blue-400 hover:bg-blue-50"
                   >
-                    <XCircle className="w-3.5 h-3.5" /> Trennen
+                    <Share2 className="w-5 h-5" />
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Partner verknüpfen</span>
-                    <div className="flex items-center gap-1 text-[var(--primary)] bg-red-50/50 p-1.5 rounded-lg border border-red-100 px-2.5">
-                      <AlertCircle className="w-3 h-3 text-red-500" />
-                      <span className="font-bold text-[8px] text-red-800 uppercase tracking-wider">Fehlt</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Code hier eingeben" 
-                      className="flex-1 p-3.5 rounded-xl border border-blue-100 bg-gray-50 font-mono uppercase text-center outline-none focus:border-blue-400 focus:bg-white transition-colors text-sm text-[var(--text-main)] font-bold placeholder:text-blue-200 placeholder:font-sans placeholder:text-[11px] placeholder:tracking-normal" 
-                      value={partnerCodeInput} 
-                      onChange={(e) => setPartnerCodeInput(e.target.value)} 
-                    />
-                    <button 
-                      onClick={handleLinkPartner} 
-                      disabled={!partnerCodeInput || isLinking} 
-                      className="bg-blue-500 text-white px-5 rounded-xl font-bold disabled:opacity-50 text-xs shadow-md active:scale-95 transition-all hover:bg-blue-600"
-                    >
-                      OK
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* App Nutzung Box (Unverändert) */}
+              {/* Unterer Teil: Partnercode eintragen */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest ml-1">oder Partnercode eintragen:</span>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="text" 
+                    placeholder="Bisou-Code eingeben" 
+                    value={partnerCodeInput} 
+                    onChange={(e) => setPartnerCodeInput(e.target.value)} 
+                    className="flex-1 bg-gray-50 border border-blue-100 rounded-2xl h-12 text-center font-mono font-black text-[15px] text-[var(--text-main)] outline-none focus:border-blue-400 focus:bg-white transition-colors placeholder:text-blue-200 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal uppercase"
+                  />
+                  <button 
+                    onClick={handleLinkPartner} 
+                    disabled={!partnerCodeInput || isLinking} 
+                    className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-blue-500 text-white rounded-2xl shadow-md active:scale-95 transition-all hover:bg-blue-600 disabled:opacity-50 disabled:bg-gray-300 disabled:shadow-none"
+                  >
+                    <Check className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* App Nutzung Box */}
           <div className="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-sm flex flex-col items-center justify-center">
             <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">App Nutzung:</span>
             {isDesktop ? (
@@ -331,7 +348,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
             ) : isStandalone ? (
               <span className="font-black text-[15px] text-blue-900 tracking-tight flex items-center gap-2">✨ Installiert</span>
             ) : (
-              <button onClick={() => setShowInstallModal(true)} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">App jetzt installieren</button>
+              <button onClick={() => setShowInstallModal(true)} className="w-full mt-1 bg-white border border-blue-100 py-3 rounded-xl text-blue-600 font-bold text-xs shadow-sm active:scale-95 transition-all hover:bg-blue-50">Bisou-App installieren</button>
             )}
           </div>
         </div>
@@ -364,7 +381,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
             {isAndroid && (
               <>
                 <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-6">
-                  Ich sehe, du nutzt ein <b className="text-[#1F1939]">Android-Gerät</b>.
+                  Ich sehe du hast ein <b className="text-[#1F1939]">Android-Gerät</b>, hier kannst du die App besonders einfach installieren:
                 </p>
                 {deferredPrompt ? (
                   <button onClick={triggerAndroidInstall} className="w-full py-4 rounded-xl bg-blue-500 text-white font-bold shadow-md active:scale-95 transition-all hover:bg-blue-600">
@@ -381,7 +398,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
             {isIOS && (
               <>
                 <p className="text-sm text-[#4A4468] font-medium leading-relaxed mb-6">
-                  Ich sehe, du nutzt ein <b className="text-[#1F1939]">iPhone oder iPad</b>.
+                  Ich sehe du hast ein <b className="text-[#1F1939]">iPhone</b>, hier ist die installation etwas komplizierter:
                 </p>
                 <div className="space-y-5 mb-8 text-left">
                   <div className="flex items-center gap-4">

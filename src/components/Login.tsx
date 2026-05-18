@@ -105,12 +105,15 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen w-full max-w-md mx-auto animate-entrance px-4 py-12 relative overflow-hidden">
+    {/* min-h-screen durch h-[100dvh] ersetzt, justify-start durch justify-center ersetzt und py-12 entfernt */}
+    <div className="flex flex-col items-center justify-center h-[100dvh] w-full max-w-md mx-auto animate-entrance px-4 relative overflow-hidden">
       
-      <div className="relative z-10 w-full flex-1 flex flex-col items-center">
+      {/* flex-1 entfernt, da der Parent zentriert ist */}
+      <div className="relative z-10 w-full flex flex-col items-center justify-center">
         {mode === 'login' && (
-          <div className="text-center mb-12 select-none w-full">
-            <h1 className="text-7xl font-semibold text-[var(--text-main)] mb-8 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
+          {/* mb-12 auf mb-8 reduziert */}
+          <div className="text-center mb-8 select-none w-full">
+            <h1 className="text-7xl font-semibold text-[var(--text-main)] mb-6 tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
               Bisou
             </h1>
             
@@ -119,7 +122,6 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                 <span className="whitespace-nowrap">Jeden Tag ein&nbsp;</span>
                 
                 <span className="relative inline-flex items-center justify-center text-[var(--primary)] h-[1.2em]">
-                  {/* Invisible spacer to maintain width of the largest word */}
                   <span className="invisible px-[1px] whitespace-nowrap">Küsschen</span>
                   
                   <span className="absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap transition-all duration-1000 ease-in-out px-[1px]" 
@@ -146,7 +148,8 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           </div>
         )}
         
-        <div className="w-full pt-8">
+        {/* pt-8 und pb-24 entfernt, da der Inhalt nun perfekt mittig sitzt */}
+        <div className="w-full">
           {message && (
             <div className={`p-4 rounded-[22px] text-sm font-bold mb-6 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
               message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
@@ -192,8 +195,8 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           {mode === 'register' && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
               {regStep === 1 && (
-                <div className="space-y-6">
-                  <div className="text-center mb-8">
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
                     <h2 className="text-3xl font-bold text-[var(--text-main)] mb-2">Willkommen! ✨</h2>
                   </div>
                   <div className="space-y-3">
@@ -201,12 +204,12 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     <input type="email" className="input-base" placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
                     <input type="password" className="input-base" placeholder="Passwort (min. 6 Zeichen)" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
-                  <button disabled={!email || password.length < 6 || !displayName} onClick={() => setRegStep(2)} className="btn-action">Weiter <ArrowRight className="w-5 h-5" /></button>
-                  <button type="button" onClick={() => setMode('login')} className="w-full text-sm font-bold text-[var(--muted)] hover:text-[var(--text-main)] transition-colors">Bereits ein Konto? Login</button>
+                  <button disabled={!email || password.length < 6 || !displayName} onClick={() => setRegStep(2)} className="btn-action w-full mt-2">Weiter <ArrowRight className="w-5 h-5" /></button>
+                  <button type="button" onClick={() => setMode('login')} className="w-full text-sm font-bold text-[var(--muted)] hover:text-[var(--text-main)] transition-colors mt-2">Bereits ein Konto? Login</button>
                 </div>
               )}
               {regStep === 2 && (
-                <div className="space-y-8 text-center">
+                <div className="space-y-6 text-center">
                   {message?.type === 'success' ? (
                     <div className="space-y-6">
                       <div className="w-20 h-20 bg-green-50 rounded-[2.5rem] flex items-center justify-center mx-auto"><Mail className="w-10 h-10 text-green-500" /></div>
@@ -215,16 +218,16 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     </div>
                   ) : (
                     <>
-                      <div className="w-20 h-20 bg-purple-50 rounded-[2.5rem] flex items-center justify-center mx-auto"><ShieldCheck className="w-10 h-10 text-[var(--secondary)]" /></div>
+                      <div className="w-16 h-16 bg-purple-50 rounded-3xl flex items-center justify-center mx-auto"><ShieldCheck className="w-8 h-8 text-[var(--secondary)]" /></div>
                       <div>
-                        <h2 className="text-3xl font-bold text-[var(--text-main)] mb-2">Datenschutz</h2>
-                        <p className="text-sm text-[var(--text)] leading-relaxed opacity-70 px-4">
+                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">Datenschutz</h2>
+                        <p className="text-xs text-[var(--text)] leading-relaxed opacity-70 px-2">
                           Die Verarbeitung von Daten durch diese Anwendung erfolgt ausschließlich für persönliche oder familiäre Zwecke. Sie fällt daher gemäß Art. 2 Abs. 2 lit. c DSGVO unter das sogenannte Haushaltsprivileg, weshalb die Bestimmungen der DSGVO keine Anwendung finden.
                         </p>
                       </div>
-                      <label className="flex items-center gap-4 p-6 rounded-[28px] border-2 border-purple-50 bg-white cursor-pointer hover:border-[var(--secondary)] transition-all">
-                        <input type="checkbox" className="w-6 h-6 rounded-lg accent-[var(--secondary)]" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} />
-                        <span className="text-sm font-bold text-[var(--text)] text-left">Ich habe die Datenschutzhinweise gelesen.</span>
+                      <label className="flex items-center gap-3 p-4 rounded-2xl border-2 border-purple-50 bg-white cursor-pointer hover:border-[var(--secondary)] transition-all">
+                        <input type="checkbox" className="w-5 h-5 rounded-md accent-[var(--secondary)]" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} />
+                        <span className="text-xs font-bold text-[var(--text)] text-left">Ich habe die Datenschutzhinweise gelesen.</span>
                       </label>
                       <div className="space-y-3">
                         <button disabled={!privacyAccepted || loading} onClick={handleRegisterFinal} className="btn-action">{loading ? 'Wird erstellt...' : 'Konto erstellen ✨'}</button>
@@ -239,7 +242,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
           {/* Global Forgot Password Link */}
           {mode !== 'forgot' && !(mode === 'register' && regStep === 2 && message?.type === 'success') && (
-            <div className="text-center pt-8">
+            <div className="text-center pt-6">
               <button 
                 type="button" 
                 onClick={() => {
@@ -254,8 +257,8 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           )}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-auto pt-12 pb-12 text-center">
+        {/* Footer: Fixiert am unteren Rand, bottom-4 für kompakten Look */}
+        <footer className="absolute bottom-4 left-0 w-full text-center">
           <p className="text-[10px] font-bold text-[var(--muted)] opacity-50">
             Bisou-App v.01<br />
             <a 
@@ -267,7 +270,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
               Benedikt S.
             </a> &copy; 2026
           </p>
-          <div className="flex justify-center gap-4 mt-2">
+          <div className="flex justify-center gap-4 mt-1">
             <button 
               onClick={() => setShowPrivacyModal(true)}
               className="text-[10px] font-bold text-[var(--muted)] opacity-50 underline"
