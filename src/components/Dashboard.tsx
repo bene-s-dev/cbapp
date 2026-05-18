@@ -218,31 +218,31 @@ export default function Dashboard({
               <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
                 {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : hasPartner ? (<Users className="w-8 h-8 text-purple-200" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <div className="flex items-center gap-1.5 mt-2.5">
-                <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[60px] truncate">
-                  {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
-                </span>
+              <div className="absolute top-full right-3 flex items-center justify-end gap-1.5 mt-2.5 whitespace-nowrap">
                 {hasPartner && (
                   <button onClick={() => setShowStreakModal('partner')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
-                    <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
-                    <span className="text-[9px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
+                    <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />
+                    <span className="text-[10px] font-black text-orange-600">{partnerStreak?.current_streak || 0}</span>
                   </button>
                 )}
+                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[90px] truncate text-right">
+                  {hasPartner ? partnerName.split(' ')[0] : 'Partner'}
+                </span>
               </div>
             </div>
 
             {/* My Avatar & Name */}
-            <div className="flex flex-col items-center relative z-10 -ml-6">
+            <div className="flex flex-col items-center relative z-10 -ml-4">
               <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden shadow-md">
                 {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<Users className="w-8 h-8 text-purple-200" />)}
               </div>
-              <div className="flex items-center gap-1.5 mt-2.5">
-                <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[60px] truncate">
+              <div className="absolute top-full left-3 flex items-center justify-start gap-1.5 mt-2.5 whitespace-nowrap">
+                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] max-w-[90px] truncate text-left">
                   {userName.split(' ')[0]}
                 </span>
                 <button onClick={() => setShowStreakModal('me')} className="flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
-                  <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
-                  <span className="text-[9px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
+                  <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />
+                  <span className="text-[10px] font-black text-orange-600">{myStreak?.current_streak || 0}</span>
                 </button>
               </div>
             </div>

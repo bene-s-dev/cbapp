@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Copy, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2, LogOut } from 'lucide-react';
+import { Camera, Copy, Download, Check, AlertCircle, Pencil, Trash2, XCircle, Heart, Share2, LogOut, Bell, BellOff } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 
@@ -35,6 +35,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [isPushLoading, setIsPushLoading] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     
     // Check initial push status
     const checkPush = async () => {
+      if ('Notification' in window) {
+        setPushPermission(Notification.permission);
+      }
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
@@ -53,8 +57,27 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   }, [initialProfile]);
 
   const handleTogglePush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       showAlert("Browser unterstützt keine Benachrichtigungen.", "error");
+      return;
+    }
+
+    if (!pushEnabled && pushPermission === 'default') {
+      setIsPushLoading(true);
+      try {
+        const permission = await Notification.requestPermission();
+        setPushPermission(permission);
+        if (permission !== 'granted') {
+          showAlert("Berechtigung verweigert. Bitte in den Browsereinstellungen aktivieren.", "error");
+        } else {
+          showAlert("Berechtigung erteilt! Klicke jetzt auf 'Benachrichtigungen erhalten'.", "info");
+        }
+      } catch (err) {
+        console.error(err);
+        showAlert("Fehler bei der Berechtigungsanfrage.", "error");
+      } finally {
+        setIsPushLoading(false);
+      }
       return;
     }
 
@@ -71,10 +94,9 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         showAlert("Benachrichtigungen deaktiviert.", "info");
       } else {
         // ENABLE
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          showAlert("Berechtigung verweigert. Bitte in den Browsereinstellungen aktivieren.", "error");
-          return;
+        if (pushPermission !== 'granted') {
+           showAlert("Berechtigung fehlt. Bitte in den Browsereinstellungen aktivieren.", "error");
+           return;
         }
 
         const subscription = await registration.pushManager.subscribe({
@@ -301,8 +323,8 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-hidden">
-        <header className="flex flex-col items-center mb-6 relative pt-8 shrink-0">
-          <h2 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-8">Mein Bisou-Profil</h2>
+        <header className="flex flex-col items-center mb-6 relative pt-16 shrink-0">
+          <h2 className="text-[10px] font-black text-[#1F1939] uppercase tracking-[0.2em] mb-8">Mein Bisou-Profil</h2>
           <div className="flex flex-col items-center">
             <div className="relative flex items-center">
               <div className="relative group cursor-pointer" onClick={() => profile?.avatar_url ? setShowAvatarMenu(true) : document.getElementById('avatar-upload')?.click()}>
@@ -336,12 +358,14 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
           </div>
         </header>
 
-        <div className="space-y-3 w-full overflow-hidden flex-1 flex flex-col">
+        <div className="space-y-6 w-full overflow-hidden flex-1 flex flex-col">
           
           {/* Kombiniertes Modul: Mein Code & Partner */}
-          {profile?.partner_id ? (
-            <div className="status-box p-5 pb-4 flex flex-col items-center justify-center gap-3 text-center shrink-0 min-h-[140px] relative">
-              <div className="flex flex-col items-center gap-1 mb-4">
+          <div className="flex flex-col gap-2 shrink-0">
+            <h3 className="text-[10px] font-black text-[#1F1939] uppercase tracking-[0.2em] ml-2">Bisou-Verknüpfung</h3>
+            {profile?.partner_id ? (
+            <div className="status-box pt-4 pb-12 flex flex-col items-center justify-center gap-3 text-center shrink-0 min-h-[140px] relative">
+              <div className="flex flex-col items-center gap-1">
                 <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">Mein Bisou-Partner:</span>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="font-black text-xl text-[var(--text-main)] tracking-tight">{partnerProfile?.display_name || 'Partner'}</span>
@@ -408,17 +432,34 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
             </div>
           )}
+          </div>
 
           {/* App Nutzung & Benachrichtigungen */}
-          <div className="flex flex-col gap-2.5 pt-2 shrink-0">
-            <button 
-              onClick={handleTogglePush}
-              disabled={isPushLoading}
-              className={`flex items-center justify-center gap-3 py-4 px-6 rounded-[22px] border-2 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm ${pushEnabled ? 'bg-green-50 border-green-100 text-[var(--accent-green)]' : 'bg-white border-[var(--card-border)] text-[var(--muted)] hover:border-[var(--secondary)]'}`}
-            >
-              {pushEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-              {pushEnabled ? 'Benachrichtigungen Aktiv' : 'Benachrichtigungen Aktivieren'}
-            </button>
+          <div className="flex flex-col gap-2 shrink-0">
+            <h3 className="text-[10px] font-black text-[#1F1939] uppercase tracking-[0.2em] ml-2">Benachrichtigungen</h3>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col items-center gap-1.5">
+              <button 
+                onClick={() => !isPushLoading && handleTogglePush()}
+                className={`w-full flex items-center justify-between p-4 rounded-[22px] border-2 cursor-pointer transition-all active:scale-95 shadow-sm outline-none focus:border-[var(--secondary)] ${pushEnabled ? 'bg-green-50 border-green-100 hover:border-green-200' : 'bg-white border-[var(--card-border)] hover:border-[var(--secondary)] hover:bg-purple-50/30'} ${isPushLoading ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <div className="flex items-center gap-3 flex-1 pr-2">
+                  <div className={`p-2 rounded-xl shrink-0 ${pushEnabled ? 'bg-green-100 text-[var(--accent-green)]' : 'bg-purple-50 text-[var(--muted)]'}`}>
+                    {pushEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                  </div>
+                  <span className={`font-black text-[10px] uppercase tracking-widest text-left leading-tight ${pushEnabled ? 'text-[var(--accent-green)]' : 'text-[var(--text-main)]'}`}>
+                    {pushEnabled ? 'Benachrichtigungen Aktiv' : (pushPermission === 'default' ? 'Benachrichtigungen für Bisou erlauben' : 'Benachrichtigungen erhalten')}
+                  </span>
+                </div>
+                
+                {(pushPermission === 'granted' || pushEnabled) && (
+                  <div className={`w-10 h-6 rounded-full transition-colors relative shrink-0 border-2 ${pushEnabled ? 'bg-[var(--accent-green)] border-[var(--accent-green)]' : 'bg-gray-100 border-gray-200'}`}>
+                    <div className={`absolute top-[2px] w-4 h-4 bg-white rounded-full shadow-sm transition-all ${pushEnabled ? 'left-[calc(100%-1.125rem)]' : 'left-[2px]'}`} />
+                  </div>
+                )}
+              </button>
+              <p className="text-[9px] text-[var(--muted)] font-medium text-center">Benachrichtigungen sind eine Beta-Funktion</p>
+            </div>
 
             {!isStandalone && (
               <div className="flex justify-center">
@@ -439,8 +480,9 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
               </div>
             )}
           </div>
+          </div>
 
-          <div className="mt-auto pb-4 flex justify-center shrink-0">
+          <div className="mt-auto pt-8 pb-8 flex justify-center shrink-0">
             <button 
               onClick={() => {
                 showConfirm(
