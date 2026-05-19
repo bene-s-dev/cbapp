@@ -219,10 +219,10 @@ export default function Dashboard({
           {/* Avatars Row */}
           <div className="flex -space-x-4 mb-5">
             <div className={`w-20 h-20 rounded-[2.2rem] border-2 border-white flex items-center justify-center overflow-hidden z-20 shadow-md ${hasPartner ? 'bg-white' : 'bg-purple-50/50 border-dashed border-purple-200'}`}>
-              {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-purple-200" />)}
+              {partnerAvatar ? (<img src={partnerAvatar} alt="P" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-[var(--secondary)]" />)}
             </div>
             <div className="w-20 h-20 rounded-[2.2rem] bg-white border-2 border-white flex items-center justify-center overflow-hidden z-10 shadow-md">
-              {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-purple-200" />)}
+              {userAvatar ? (<img src={userAvatar} alt="U" className="w-full h-full object-cover" />) : (<UserIcon className="w-8 h-8 text-[var(--secondary)]" />)}
             </div>
           </div>
 
@@ -242,7 +242,7 @@ export default function Dashboard({
                     <span className="text-[11px] shrink-0 font-black text-gray-400">0</span>
                   </div>
                 )}
-                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] truncate text-right">
+                <span className="text-xs font-black text-[var(--secondary)] uppercase tracking-[0.2em] truncate text-right">
                   {partnerName.split(' ')[0]}
                 </span>
               </div>
@@ -252,10 +252,10 @@ export default function Dashboard({
 
               {/* User side (Right) */}
               <div className="flex-1 flex items-center justify-start gap-2 pl-2 overflow-visible">
-                <span className="text-xs font-black text-[var(--muted)] uppercase tracking-[0.2em] truncate">
-                  {userName.split(' ')[0]}
+                <span className="text-xs font-black text-[var(--secondary)] uppercase tracking-[0.2em] truncate text-left">
+                  {(userName || 'Ich').split(' ')[0]}
                 </span>
-                <button onClick={() => setShowStreakModal('me')} className="flex shrink-0 items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
+                <button onClick={() => setShowStreakModal('user')} className="flex shrink-0 items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 active:scale-90 transition-transform">
                   <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500 fill-orange-500" />
                   <span className="text-[11px] shrink-0 font-black text-orange-600">{myStreak?.current_streak || 0}</span>
                 </button>
@@ -275,7 +275,6 @@ export default function Dashboard({
           <div className="status-box flex flex-col items-center text-center p-6 mb-2">
             <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100"><LinkIcon className="w-6 h-6" /></div>
             <p className="font-black text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
-            <p className="text-[10px] text-[var(--muted)] font-medium mb-4 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
             <button onClick={() => navigate('/profile?tab=partner')} className="btn-action py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
           </div>
         ) : (
@@ -313,10 +312,6 @@ export default function Dashboard({
             </div>
           </div>
         )}
-
-        <p className="text-[8px] font-black text-center text-[var(--muted)] flex items-center justify-center gap-1.5 uppercase tracking-[0.2em] opacity-50 mt-0.5">
-          Fragen generiert von Gemini <Sparkles className="w-2.5 h-2.5" />
-        </p>
       </div>
 
       <div className="pb-3 pt-0 shrink-0">
@@ -328,7 +323,7 @@ export default function Dashboard({
       <StreakModal 
         isOpen={!!showStreakModal} 
         onClose={() => setShowStreakModal(null)} 
-        streakData={showStreakModal === 'me' ? myStreak : partnerStreak}
+        streakData={showStreakModal === 'user' ? myStreak : partnerStreak}
         partnerName={partnerName}
       />
     </div>

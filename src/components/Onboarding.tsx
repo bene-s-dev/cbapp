@@ -121,7 +121,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <Camera className="w-10 h-10 text-purple-200" />
+                  <Camera className="w-10 h-10 text-[var(--secondary)]" />
                 )}
                 {loading && (
                   <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 z-10">
@@ -142,7 +142,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
           
           <div className="space-y-3">
             <h2 className="text-3xl font-black text-[#1F1939] tracking-tight">Hallo {userName}! ❤️</h2>
-            <p className="text-[var(--text)] text-xs font-medium leading-relaxed opacity-80 max-w-[240px] mx-auto">
+            <p className="text-[var(--text)] text-xs font-bold leading-relaxed opacity-80 max-w-[240px] mx-auto">
               Lass uns dein Profil vervollständigen. Möchtest du ein Foto hochladen?
             </p>
           </div>

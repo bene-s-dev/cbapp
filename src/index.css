@@ -38,6 +38,7 @@ html, body {
   background-color: #F8F7FF !important;
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
   overflow: hidden;
   /* Crucial for edge-to-edge on some browsers */
   position: relative;

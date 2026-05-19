@@ -313,7 +313,7 @@ export default function Login({ onLogin, initialMode = 'login' }: LoginProps) {
               <span className="text-3xl font-bold text-[var(--secondary)]">§</span>
             </div>
             <h3 className="text-xl font-bold text-[#1F1939] mb-4">Impressum</h3>
-            <p className="text-sm text-[#4A4468] leading-relaxed mb-8 font-medium">
+            <p className="text-sm text-[#4A4468] leading-relaxed mb-8 font-bold">
               Made with ❤️ in Freiburg
             </p>
             <button 

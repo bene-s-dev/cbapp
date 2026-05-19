@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Pencil, Check, Bell, BellOff, Info, X, User as UserIcon, ChevronRight, ArrowLeft, Trash2, Share2, Copy, Download, Smartphone } from 'lucide-react';
+import { Camera, Pencil, Check, Bell, BellOff, Info, X, User as UserIcon, ChevronRight, ArrowLeft, Trash2, Share2, Copy, Download, Smartphone, Users, AlertTriangle } from 'lucide-react';
 import ImageCropper from './ImageCropper';
 import { useDialog } from './DialogProvider';
 import DeleteAccountModal from './DeleteAccountModal';
 import { supabase } from '../lib/supabase';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface ProfileProps {
   profile: any;
@@ -13,8 +14,11 @@ interface ProfileProps {
 
 export default function Profile({ profile: initialProfile, partnerProfile, onLogout }: ProfileProps) {
   const { showAlert, showConfirm } = useDialog();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') || 'main') as 'main' | 'partner' | 'notifications' | 'install';
+  
   const [profile, setProfile] = useState<any>(initialProfile);
-  const [activeTab, setActiveTab] = useState<'main' | 'partner' | 'notifications' | 'install'>('main');
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialProfile?.display_name || '');
   const [loading, setLoading] = useState(false);
@@ -41,6 +45,14 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     setIsDesktop(!/iphone|ipad|ipod|android/.test(ua));
   }, []);
 
+  const setActiveTab = (tab: string) => {
+    if (tab === 'main') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab });
+    }
+  };
+
   // --- Logic ---
   const handleUpdateName = async () => {
     if (!newName.trim() || newName === profile.display_name) { setIsEditingName(false); return; }
@@ -49,7 +61,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       const { error } = await supabase.from('profiles').update({ display_name: newName.trim() }).eq('id', profile.id);
       if (error) throw error;
       setProfile({ ...profile, display_name: newName.trim() });
-      showAlert("Name aktualisiert! ✨", "success");
+      showAlert("Name aktualisiert!", "success");
     } catch (err) { showAlert("Fehler beim Aktualisieren.", "error"); } finally { setLoading(false); setIsEditingName(false); }
   };
 
@@ -89,7 +101,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
   };
 
   const copyToClipboard = (text: string) => {
-    const cleanText = text.replace(/^CB-/, '');
+    const cleanText = text;
     const textArea = document.createElement("textarea");
     textArea.value = cleanText;
     textArea.style.position = "fixed";
@@ -99,12 +111,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
-    showAlert("Code kopiert! ✨", "success");
+    showAlert("Code kopiert!", "success");
   };
 
   const handleShareCode = async () => {
     if (!profile?.partner_code) return;
-    const cleanCode = profile.partner_code.replace(/^CB-/, '');
+    const cleanCode = profile.partner_code;
     const shareData = { title: 'Bisou Partner-Code', text: `Verknüpf dich mit mir auf Bisou! Mein Code ist: ${cleanCode}` };
     if (navigator.share) {
       try { await navigator.share(shareData); } catch (err) { console.log('Teilen abgebrochen'); }
@@ -177,7 +189,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
       if (updateError) throw updateError;
       setProfile({ ...profile, avatar_url: publicUrl });
-      showAlert("Profilbild aktualisiert! ✨", "success");
+      showAlert("Profilbild aktualisiert!", "success");
     } catch (err) {
       showAlert("Fehler beim Hochladen.", "error");
     } finally {
@@ -209,9 +221,46 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
                 <div className="text-center text-[10px] font-bold text-[var(--muted)]">Seit {getDaysConnected()} Tagen verknüpft</div>
               </div>
             ) : (
-              <div className="status-box p-3 flex flex-col gap-4 shrink-0 w-full">
-                <div className="text-center"><span className="text-[8px] font-bold text-[var(--muted)] uppercase tracking-wider">Kein Partner verknüpft</span></div>
-                {/* ... (Code/Input UI) ... */}
+              <div className="w-full flex flex-col gap-4">
+                <div className="status-box p-5 flex flex-col items-center gap-4">
+                  <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">Mein Bisou-Code:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-black tracking-widest text-[#1F1939]">{profile?.partner_code}</span>
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <button onClick={() => copyToClipboard(profile?.partner_code)} className="p-2 rounded-xl bg-purple-50 text-[var(--secondary)] active:scale-90 transition-all">
+                        <Copy className="w-5 h-5" />
+                      </button>
+                      <button onClick={handleShareCode} className="p-2 rounded-xl bg-purple-50 text-[var(--secondary)] active:scale-90 transition-all">
+                        <Share2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`status-box p-6 flex flex-col gap-4 transition-all ${shouldShake ? 'animate-shake border-red-200' : ''}`}>
+                  <span className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] text-center">Partner-Bisou-Code eingeben:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 relative">
+                      <input 
+                        type="text" 
+                        value={partnerCodeInput} 
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          if (val.length <= 9) setPartnerCodeInput(val);
+                        }}
+                        placeholder="CB-XXXXXX"
+                        className="w-full bg-purple-50/50 border-2 border-purple-100 rounded-xl px-4 py-3 text-2xl font-black text-[#1F1939] outline-none focus:border-[var(--secondary)] transition-all uppercase tracking-widest"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleLinkPartner}
+                      disabled={isLinking || partnerCodeInput.length < 5}
+                      className="w-12 h-12 rounded-xl bg-[var(--secondary)] text-white flex items-center justify-center shadow-lg active:scale-90 disabled:opacity-50 disabled:active:scale-100 transition-all"
+                    >
+                      {isLinking ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-6 h-6" />}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -258,7 +307,6 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
                     </button>
                   </div>
                 )}
-                <p className="text-[8px] text-[var(--muted)] font-medium text-center flex items-center justify-center gap-1 mt-2"><Info className="w-2.5 h-2.5" /> Benachrichtigungen sind eine Beta-Funktion</p>
               </div>
           </div>
         );
@@ -266,25 +314,44 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         return (
           <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300 px-4">
             <h2 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em]">INSTALLATION</h2>
-            <div className="status-box p-4 flex flex-col items-center justify-center gap-4 text-center w-full">
+            <div className="status-box p-6 flex flex-col items-center justify-center gap-6 text-center w-full">
                {isDesktop ? (
-                  <div className="p-3 text-center w-full min-w-[200px]">
-                    <p className="text-[9px] font-bold text-[var(--muted)] leading-tight uppercase tracking-wider">App-Installation nur auf Mobilgeräten möglich</p>
+                  <div className="p-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mb-4 mx-auto">
+                      <Smartphone className="w-8 h-8 text-purple-200" />
+                    </div>
+                    <p className="text-[11px] font-black text-[var(--muted)] leading-tight uppercase tracking-widest">Die Installation wird nur auf Mobilgeräten unterstützt.</p>
                   </div>
                 ) : isIOS ? (
-                  <div className="flex flex-col gap-3 text-center">
-                    <p className="text-[9px] font-bold text-[var(--muted)] leading-tight uppercase tracking-wider">
-                      Um Bisou zu installieren, tippe auf den "Teilen"-Button unten im Browser und wähle "Zum Home-Bildschirm".
-                    </p>
-                    <Smartphone className="w-8 h-8 mx-auto text-[var(--secondary)] animate-bounce" />
+                  <div className="flex flex-col gap-6 items-center">
+                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center shadow-inner">
+                      <Download className="w-8 h-8 text-[var(--secondary)]" />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="w-6 h-6 rounded-full bg-[var(--secondary)] text-white text-[10px] font-black flex items-center justify-center shrink-0">1</div>
+                        <p className="text-[10px] font-bold text-[#1F1939] uppercase tracking-wider">Tippe auf den "Teilen"-Button (Quadrat mit Pfeil) unten im Browser.</p>
+                      </div>
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="w-6 h-6 rounded-full bg-[var(--secondary)] text-white text-[10px] font-black flex items-center justify-center shrink-0">2</div>
+                        <p className="text-[10px] font-bold text-[#1F1939] uppercase tracking-wider">Scrolle nach unten und wähle "Zum Home-Bildschirm".</p>
+                      </div>
+                    </div>
+                    <Smartphone className="w-8 h-8 text-[var(--secondary)] animate-bounce mt-2" />
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => setShowInstallModal(true)} 
-                    className="btn-secondary py-4 px-6 text-[10px] font-black uppercase tracking-widest w-full shadow-sm border-2"
-                  >
-                    Bisou-App installieren
-                  </button>
+                  <div className="flex flex-col gap-6 items-center w-full">
+                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center shadow-inner">
+                      <Download className="w-8 h-8 text-[var(--secondary)]" />
+                    </div>
+                    <p className="text-[10px] font-bold text-[#1F1939] uppercase tracking-wider leading-relaxed">Installiere Bisou als Web-App für den schnellen Zugriff direkt von deinem Startbildschirm.</p>
+                    <button 
+                      onClick={() => setShowInstallModal(true)} 
+                      className="btn-secondary py-4 px-6 text-[10px] font-black uppercase tracking-widest w-full shadow-sm border-2 bg-purple-50/30 border-purple-100 hover:bg-purple-50 transition-all"
+                    >
+                      Bisou-App installieren
+                    </button>
+                  </div>
                 )}
             </div>
           </div>
@@ -293,10 +360,10 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         return (
           <div className="flex flex-col gap-2 px-4">
             {[
-              { id: 'partner', label: '🤝 Bisou-Partner verbinden' },
-              { id: 'notifications', label: '🔔 Benachrichtigungen' },
-              { id: 'install', label: '📲 App-Installation' },
-              { id: 'delete', label: '⚠️ Account löschen', isDanger: true }
+              { id: 'partner', label: 'Bisou-Partner verbinden', icon: Users },
+              { id: 'notifications', label: 'Benachrichtigungen', icon: Bell },
+              { id: 'install', label: 'App installieren', icon: Smartphone },
+              { id: 'delete', label: 'Account löschen', icon: Trash2, isDanger: true }
             ].map(item => (
               <button 
                 key={item.id} 
@@ -308,9 +375,12 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
                   item.isDanger ? 'border-red-50 hover:border-red-200' : 'border-purple-50 hover:border-purple-200'
                 }`}
               >
-                <span className={`font-black text-xs uppercase tracking-widest ${item.isDanger ? 'text-red-400' : 'text-[#1F1939]'}`}>
-                  {item.label}
-                </span>
+                <div className="flex items-center gap-3">
+                  <item.icon className={`w-4 h-4 ${item.isDanger ? 'text-red-400' : 'text-[var(--secondary)]'}`} />
+                  <span className={`font-black text-xs uppercase tracking-widest ${item.isDanger ? 'text-red-400' : 'text-[#1F1939]'}`}>
+                    {item.label}
+                  </span>
+                </div>
                 <ChevronRight className={`w-4 h-4 ${item.isDanger ? 'text-red-300' : 'text-purple-300'}`} />
               </button>
             ))}
@@ -328,7 +398,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
       
       <header className="flex flex-col items-center pt-16 pb-2 shrink-0 relative">
         {activeTab !== 'main' && (
-          <button onClick={() => setActiveTab('main')} className="absolute left-4 top-10 p-2 rounded-full bg-white border border-purple-100 shadow-sm active:scale-95 transition-all">
+          <button onClick={() => navigate(-1)} className="absolute left-4 top-10 p-2 rounded-full bg-white border border-purple-100 shadow-sm active:scale-95 transition-all">
             <ArrowLeft className="w-4 h-4 text-[var(--secondary)]" />
           </button>
         )}
@@ -336,7 +406,7 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         
         <div className="relative flex items-center mb-3 mt-4">
           <div className="w-20 h-20 rounded-[2.2rem] bg-white shadow-md flex items-center justify-center overflow-hidden">
-            {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 text-purple-200" />}
+            {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 text-[var(--secondary)]" />}
           </div>
           <button 
             onClick={() => document.getElementById('avatar-upload')?.click()}
@@ -349,14 +419,14 @@ export default function Profile({ profile: initialProfile, partnerProfile, onLog
         <div className="relative flex flex-col items-center justify-center w-full mt-1 mb-6">
           {isEditingName ? (
             <div className="flex items-center gap-1.5">
-              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="text-lg font-black text-[var(--text-main)] bg-purple-50/50 border-b-2 border-[var(--secondary)] outline-none text-center py-1 w-[140px]" autoFocus onBlur={handleUpdateName} onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()} />
+              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="text-lg font-black text-[var(--secondary)] bg-purple-50/50 border-b-2 border-[var(--secondary)] outline-none text-center py-1 w-[140px]" autoFocus onBlur={handleUpdateName} onKeyDown={(e) => e.key === 'Enter' && handleUpdateName()} />
               <button onClick={handleUpdateName} className="w-8 h-8 rounded-xl bg-white border border-[var(--card-border)] text-[var(--accent-green)] flex items-center justify-center shadow-sm active:scale-90 hover:border-[var(--accent-green)] transition-all"><Check className="w-4 h-4" /></button>
             </div>
           ) : (
             <div className="relative inline-flex items-center cursor-pointer group" onClick={() => setIsEditingName(true)}>
-              <span className="text-lg font-black text-[#1F1939] uppercase tracking-[0.1em]">{profile?.display_name || 'User'}</span>
+              <span className="text-lg font-black text-[var(--secondary)] uppercase tracking-[0.1em]">{profile?.display_name || 'User'}</span>
               <div className="absolute -right-6">
-                 <Pencil className="w-3.5 h-3.5 text-purple-300 group-hover:text-[var(--secondary)] transition-colors" />
+                 <Pencil className="w-3.5 h-3.5 text-[var(--secondary)] group-hover:text-[var(--secondary)] transition-colors" />
               </div>
             </div>
           )}
