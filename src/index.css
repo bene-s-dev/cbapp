@@ -147,6 +147,49 @@ html, body {
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
+.animate-pulse-alarm { animation: pulse-alarm 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse-alarm {
+  0%, 100% { background-color: #f97316; } /* orange-500 */
+  50% { background-color: #ef4444; } /* red-500 */
+}
+
+.animate-pulse-alarm-border { animation: pulse-alarm-border 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse-alarm-border {
+  0%, 100% { border-color: #fecaca; } /* red-200 */
+  50% { border-color: #ef4444; } /* red-500 */
+}
+
+.animate-pulse-green { animation: pulse-green 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse-green {
+  0%, 100% { background-color: #22c55e; } /* green-500 */
+  50% { background-color: #16a34a; } /* green-600 */
+}
+
+.animate-calming-gradient {
+  animation: calming-gradient 4s ease infinite;
+  background: linear-gradient(90deg, #10b981, #3b82f6, #10b981);
+  background-size: 200% 100%;
+}
+@keyframes calming-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-vibrate { animation: vibrate 2s linear infinite; }
+@keyframes vibrate {
+  0%, 10%, 90%, 100% { transform: translateX(0); }
+  15%, 25%, 35%, 45% { transform: translateX(-6px) rotate(-6deg); }
+  20%, 30%, 40%, 50% { transform: translateX(6px) rotate(6deg); }
+  55% { transform: translateX(0); }
+}
+
+.animate-pulse-deep-red { animation: pulse-deep-red 0.8s ease-in-out infinite alternate; }
+@keyframes pulse-deep-red {
+  0% { background-color: #dc2626; } /* red-600 */
+  100% { background-color: #7f1d1d; } /* red-900 */
+}
+
 /* --------------------------------------------------- */
 /*  Snippflow Status Indicators with Pulsing Animation */
 /* --------------------------------------------------- */

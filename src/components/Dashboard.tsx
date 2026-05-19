@@ -35,8 +35,8 @@ function StreakModal({ isOpen, onClose, streakData, partnerName }: { isOpen: boo
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-[#2D264B]/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
-      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100 shadow-2xl">
+      <div className="absolute inset-0 bg-transparent" onClick={onClose} />
+      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md relative z-10 animate-entrance border-2 border-purple-100">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
@@ -276,7 +276,7 @@ export default function Dashboard({
             <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-3 text-[var(--secondary)] border border-purple-100"><LinkIcon className="w-6 h-6" /></div>
             <p className="font-black text-base mb-1 text-[var(--text-main)]">Der erste Schritt</p>
             <p className="text-[10px] text-[var(--muted)] font-medium mb-4 leading-relaxed px-4">Verknüpfe dich jetzt mit deinem Bisou-Partner:</p>
-            <button onClick={() => navigate('/profile')} className="btn-action py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
+            <button onClick={() => navigate('/profile?tab=partner')} className="btn-action py-2.5 px-6 text-[10px] font-black uppercase tracking-widest w-auto shadow-sm">Bisou-Partner verbinden</button>
           </div>
         ) : (
           <div className="status-box p-4 mb-2 space-y-4">

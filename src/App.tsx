@@ -54,10 +54,13 @@ function AppLayout({
             {location.pathname === '/profile' && (
               <button 
                 onClick={onLogout} 
-                className="p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 pointer-events-auto"
+                className="flex flex-col items-center gap-1 group"
                 title="Abmelden"
               >
-                <LogOut className="w-5 h-5" />
+                <div className="p-2.5 rounded-full bg-white border border-red-100 text-[var(--primary)] shadow-sm hover:bg-red-50 hover:text-red-600 transition-all active:scale-90 pointer-events-auto">
+                    <LogOut className="w-5 h-5" />
+                </div>
+                <span className="text-[7px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-600">Logout</span>
               </button>
             )}
           </div>
